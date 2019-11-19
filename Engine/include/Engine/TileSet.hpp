@@ -3,10 +3,12 @@
 #include <cstdint>
 #include <vector>
 
+#include <Engine/Resource/Sprite.hpp>
+
 class Tileset {
 public:
   struct Tile {
-    uint16_t texture_id;
+    resource::resource_id_t texture_id;
     uint32_t collision_bitmap;
   };
 

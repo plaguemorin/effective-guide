@@ -1,7 +1,7 @@
 #include "Engine/Map.hpp"
 
 Map::Map(uint16_t x, uint16_t y, Tileset *tileset)
-        : _nb_tiles_x(x), _tileset(tileset) {
+        : _nb_tiles_x(x), _nb_tiles_y(y), _tileset(tileset) {
   _tiles.resize(x * y);
 }
 

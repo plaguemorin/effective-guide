@@ -4,11 +4,14 @@
 #include <Engine/TypedObjectContainer.hpp>
 
 namespace thing {
-class Manager : public TypedObjectContainer<Thing> {
+class Manager
+        : public TypedObjectContainer<Thing> {
 public:
   Manager() = default;
 
   ~Manager() override = default;
+
+  Thing* at(uint16_t tile_x, uint16_t tile_y) const;
 
   template<typename T, typename Fnc, typename...Args>
   void all_components(Fnc func, Args&& ...args) {
