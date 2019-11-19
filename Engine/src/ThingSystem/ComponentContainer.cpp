@@ -13,7 +13,7 @@ ComponentContainer::~ComponentContainer() {
   }
 }
 
-Component *ComponentContainer::get_component(const thing_type_t& id) const {
+Component *ComponentContainer::get_component(const type_t& id) const {
   for (auto& i : _components) {
     if (i && i->type() == id)
       return i;

@@ -7,7 +7,7 @@ Thing::Thing() : Thing(type_id<Thing>()) {
 
 }
 
-Thing::Thing(thing_type_t type)
+Thing::Thing(type_t type)
         : TypedObject(type),
           ComponentContainer() {
   set_name("THING");
@@ -15,10 +15,5 @@ Thing::Thing(thing_type_t type)
 
 Thing::~Thing() {
 }
-
-void Thing::set_name(const char *name) {
-  strncpy(_name.data(), name, _name.size());
-}
-
 
 }

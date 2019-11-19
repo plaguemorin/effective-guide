@@ -1,12 +1,13 @@
 #pragma once
 
 #include <array>
-#include <Engine/ThingSystem/TypedObject.hpp>
+
+#include <Engine/TypedObject.hpp>
 
 namespace thing {
 class Component : public TypedObject {
 protected:
-  explicit Component(thing_type_t type_id) : TypedObject(type_id) {}
+  explicit Component(type_t type_id) : TypedObject(type_id) {}
 
 public:
   ~Component() override = default;
@@ -28,7 +29,7 @@ class ComponentContainer {
     static_assert(std::is_convertible<ComponentType *, Component *>::value, "Class must be subclass of Component");
   }
 
-  [[nodiscard]] Component *get_component(const thing_type_t& id) const;
+  [[nodiscard]] Component *get_component(const type_t& id) const;
 
   bool add_component(Component *cmp);
 

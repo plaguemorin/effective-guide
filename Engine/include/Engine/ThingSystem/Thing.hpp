@@ -4,8 +4,10 @@
 #include <cstdint>
 
 #include <Engine/Math.hpp>
+#include <Engine/TypedObject.hpp>
+#include <Engine/NamedObject.hpp>
+#include <Engine/Resource/Sprite.hpp>
 #include <Engine/ThingSystem/ComponentContainer.hpp>
-#include <Engine/ThingSystem/TypedObject.hpp>
 
 /*
  * While a component system would be nice,
@@ -24,28 +26,24 @@ enum class Facing {
   NORTH_WEST,
 };
 
-
 /**
  * World object (exists in the world)
  */
 class Thing :
         public TypedObject,
-        public ComponentContainer {
-  std::array<char, 10> _name;
+        public ComponentContainer,
+        public NamedObject {
   PointI _position;
   Facing _facing;
+  resource::resource_id_t _sprite_id;
 
 protected:
-  explicit Thing(thing_type_t type);
+  explicit Thing(type_t type);
 
 public:
   Thing();
 
   ~Thing() override;
-
-  void set_name(const char *name);
-
-  [[nodiscard]] const char *name() const { return _name.data(); }
 
   void set_position(PointI other) {
     _position = other;

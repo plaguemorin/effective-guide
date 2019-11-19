@@ -1,42 +1,19 @@
 #pragma once
 
-#include <vector>
 #include <Engine/ThingSystem/Thing.hpp>
+#include <Engine/TypedObjectContainer.hpp>
 
 namespace thing {
-class Manager {
-  std::vector<Thing *> _things;
-
+class Manager : public TypedObjectContainer<Thing> {
 public:
   Manager() = default;
 
-  ~Manager() = default;
-
-  void Register(Thing *aThing);
-
-  void Unregister(Thing *aThing);
+  ~Manager() override = default;
 
   template<typename T, typename Fnc, typename...Args>
-  void WithAllThingsOfType(Fnc func, Args&& ... args) const {
-    for (const auto& thing : _things) {
-      if (thing->type() == type_id<T>()) {
-        func(static_cast<T *>(thing), std::forward<Args>(args)...);
-      }
-    }
-  }
-
-  template<typename T, typename Fnc, typename...Args>
-  void WithAllThingsOfType(Fnc func, Args&& ... args) {
-    for (auto& thing : _things) {
-      if (thing->type() == type_id<T>()) {
-        func(static_cast<T *>(thing), std::forward<Args>(args)...);
-      }
-    }
-  }
-
-  template<typename T, typename Fnc, typename...Args>
-  void WithAllComponents(Fnc func, Args&& ...args) {
-    for (auto& thing : _things) {
+  void all_components(Fnc func, Args&& ...args) {
+    for (auto& thing : container()) {
+      if (!thing) continue;
       if (auto cmp = thing->get_component<T>()) {
         func(thing, cmp, std::forward<Args>(args)...);
       }
@@ -45,7 +22,8 @@ public:
 
   template<typename T, typename Fnc, typename...Args>
   void WithAllComponents(Fnc func, Args&& ...args) const {
-    for (const auto& thing : _things) {
+    for (const auto& thing : container()) {
+      if (!thing) continue;
       if (const auto cmp = thing->get_component<T>()) {
         func(thing, cmp, std::forward<Args>(args)...);
       }

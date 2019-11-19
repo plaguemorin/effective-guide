@@ -1,11 +1,11 @@
 
 #include <cstdio>
+
 #include <Engine.hpp>
 #include <Engine/ThingSystem/Thing.hpp>
 #include <Engine/ThingSystem/Actor.hpp>
 #include <Engine/ThingSystem/Enemy.hpp>
 #include <Engine/ThingSystem/Manager.hpp>
-
 
 class TestComponent : public thing::ComponentT<TestComponent> {
 public:
@@ -35,18 +35,18 @@ int main() {
   aEnemy.set_name("ENEMY");
 
   thing::Manager manager;
-  manager.Register(&aThing);
-  manager.Register(&aActor);
-  manager.Register(&aEnemy);
+  manager.register_object(&aThing);
+  manager.register_object(&aActor);
+  manager.register_object(&aEnemy);
 
   aThing.add_component<TestComponent>();
   aEnemy.add_component<TestComponent>();
 
-  manager.WithAllThingsOfType<thing::Actor>([](thing::Actor *anActor) {
+  manager.all_of_type<thing::Actor>([](thing::Actor *anActor) {
     printf("Actor %s\n", anActor->name());
   });
 
-  manager.WithAllComponents<TestComponent>([](thing::Thing *aThing, TestComponent *cmp) {
+  manager.all_components<TestComponent>([](thing::Thing *aThing, TestComponent *cmp) {
     cmp->Test();
   });
 }

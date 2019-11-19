@@ -7,7 +7,7 @@ class Actor : public Thing {
   uint16_t _health;
 
 protected:
-  explicit Actor(thing_type_t type);
+  explicit Actor(type_t type);
 
 public:
   Actor();

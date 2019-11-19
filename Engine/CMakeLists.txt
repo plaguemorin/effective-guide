@@ -17,7 +17,13 @@ add_library(Engine01
         include/Engine/TickCommand.hpp
         include/Engine/TileSet.hpp                  src/TileSet.cpp
         include/Engine/ThingSystem/Manager.hpp      src/ThingSystem/Manager.cpp
-        include/Engine/ThingSystem/Actor.hpp src/ThingSystem/Actor.cpp include/Engine/ThingSystem/Enemy.hpp src/ThingSystem/Enemy.cpp include/Engine/ThingSystem/ComponentContainer.hpp src/ThingSystem/ComponentContainer.cpp include/Engine/ThingSystem/TypedObject.hpp)
+        include/Engine/ThingSystem/Actor.hpp        src/ThingSystem/Actor.cpp
+        include/Engine/ThingSystem/Enemy.hpp        src/ThingSystem/Enemy.cpp
+        include/Engine/ThingSystem/ComponentContainer.hpp src/ThingSystem/ComponentContainer.cpp
+        include/Engine/TypedObject.hpp
+        include/Engine/Resource/Sprite.hpp          src/Resource/Sprite.cpp
+        include/Engine/Resource/Resource.hpp        src/Resource/Resource.cpp
+        include/Engine/NamedObject.hpp              src/NamedObject.cpp include/Engine/TypedObjectContainer.hpp)
 
 target_include_directories(Engine01 PUBLIC include)
 target_compile_options(Engine01 PUBLIC -fno-rtti)
