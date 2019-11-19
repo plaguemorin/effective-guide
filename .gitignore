@@ -1,0 +1,5 @@
+*.gdt
+*.gpr
+cmake-build-test/
+OBJ/
+.idea/
