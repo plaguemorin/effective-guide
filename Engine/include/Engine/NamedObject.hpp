@@ -4,13 +4,13 @@
 
 class NamedObject {
   std::array<char, 10> _name;
-public:
+
+protected:
   NamedObject();
 
   NamedObject(const NamedObject& other);
 
-  virtual ~NamedObject();
-
+public:
   void set_name(const char *name);
 
   [[nodiscard]] const char *name() const { return _name.data(); }

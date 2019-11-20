@@ -52,7 +52,7 @@ public:
     add_state<0>(aState, std::forward<States>(states)...);
   }
 
-  virtual ~Info() = default;
+  ~Info() = default;
 
   uint16_t initial_state() const { return _initial_state; }
 

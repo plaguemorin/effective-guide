@@ -14,7 +14,7 @@ public:
 
   Tileset(uint16_t nb_tiles, uint16_t tile_width_px, uint16_t tile_height_px);
 
-  virtual ~Tileset();
+  ~Tileset();
 
   uint16_t tile_width_px() const { return _tile_width_px; }
 

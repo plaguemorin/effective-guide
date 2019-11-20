@@ -43,7 +43,7 @@ protected:
 public:
   Thing();
 
-  ~Thing() override;
+  virtual ~Thing();
 
   void set_position(PointI other) {
     _position = other;

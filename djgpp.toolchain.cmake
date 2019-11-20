@@ -4,8 +4,8 @@ set(CMAKE_SYSTEM_PROCESSOR i386)
 set(CMAKE_C_COMPILER /usr/bin/i586-pc-msdosdjgpp-gcc)
 set(CMAKE_CXX_COMPILER /usr/bin/i586-pc-msdosdjgpp-g++)
 
-set(CMAKE_C_FLAGS "-mcpu=i386 -mtune=i386")
-set(CMAKE_CXX_FLAGS "-mcpu=i386 -mtune=i386")
+set(CMAKE_C_FLAGS "-O3 -mcpu=i386 -mtune=i386")
+set(CMAKE_CXX_FLAGS "-O3 -mcpu=i386 -mtune=i386")
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)

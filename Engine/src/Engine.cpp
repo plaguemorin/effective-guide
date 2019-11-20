@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-Engine::Engine(System& system)
+Engine::Engine(System* system)
         : _system(system),
           _paused(false),
           _game_state(State::STARTUP) {

@@ -1,5 +1,7 @@
 *.gdt
 *.gpr
-cmake-build-test/
+cmake-build-*/
+
 OBJ/
 .idea/
+SDL/SDL2-*/

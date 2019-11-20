@@ -1,14 +1,12 @@
 #pragma once
 
-#include <string>
 #include <chrono>
 
 class System {
-public:
+protected:
   System() = default;
 
-  virtual ~System() = default;
-
+public:
   virtual void yield() const = 0;
 
   virtual std::chrono::milliseconds timeSinceStart() const = 0;

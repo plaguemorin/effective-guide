@@ -18,6 +18,6 @@ protected:
 public:
   Resource();
 
-  ~Resource() override = default;
+  virtual ~Resource() = default;
 };
 }

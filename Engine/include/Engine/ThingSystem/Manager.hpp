@@ -9,9 +9,9 @@ class Manager
 public:
   Manager() = default;
 
-  ~Manager() override = default;
+  ~Manager() = default;
 
-  Thing* at(uint16_t tile_x, uint16_t tile_y) const;
+  [[nodiscard]] Thing* at(uint16_t tile_x, uint16_t tile_y) const;
 
   template<typename T, typename Fnc, typename...Args>
   void all_components(Fnc func, Args&& ...args) {
@@ -24,7 +24,7 @@ public:
   }
 
   template<typename T, typename Fnc, typename...Args>
-  void WithAllComponents(Fnc func, Args&& ...args) const {
+  void all_components(Fnc func, Args&& ...args) const {
     for (const auto& thing : container()) {
       if (!thing) continue;
       if (const auto cmp = thing->get_component<T>()) {

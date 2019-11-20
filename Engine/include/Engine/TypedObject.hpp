@@ -15,8 +15,6 @@ protected:
   explicit TypedObject(type_t type) : _type(type) {}
 
 public:
-  virtual ~TypedObject() = default;
-
   [[nodiscard]] const type_t& type() const { return _type; }
 };
 

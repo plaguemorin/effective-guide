@@ -26,8 +26,6 @@ public:
     }
   }
 
-  virtual ~TypedObjectContainer() = default;
-
   bool register_object(ObjectContained *obj) {
     for (auto& ptr : _objects) {
       if (!ptr) {
