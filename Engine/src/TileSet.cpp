@@ -6,3 +6,7 @@ Tileset::Tileset(uint16_t nb_tiles, uint16_t tile_width_px, uint16_t tile_height
 }
 
 Tileset::~Tileset() = default;
+
+void Tileset::add(uint16_t id, const std::string_view& path) {
+
+}

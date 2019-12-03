@@ -23,7 +23,7 @@ add_library(Engine01
         include/Engine/TypedObject.hpp
         include/Engine/Resource/Sprite.hpp src/Resource/Sprite.cpp
         include/Engine/Resource/Resource.hpp src/Resource/Resource.cpp
-        include/Engine/NamedObject.hpp src/NamedObject.cpp include/Engine/TypedObjectContainer.hpp)
+        include/Engine/NamedObject.hpp src/NamedObject.cpp include/Engine/TypedObjectContainer.hpp src/INIReader.hpp)
 
 target_include_directories(Engine01 PUBLIC include)
 target_compile_options(Engine01 PUBLIC -fno-rtti)

@@ -42,6 +42,14 @@ public:
 
   TileInfo& info_at_tile(uint16_t x, uint16_t y) { return _tiles.at(y * _nb_tiles_x + x); }
 
+  bool collides(uint32_t x, uint32_t y) const {
+    const auto& tile_info = info_at_screen_space(x, y);
+    const auto x_left = x % _tileset->tile_width_px();
+    const auto y_left = y % _tileset->tile_height_px();
+
+    return _tileset->has_collision(tile_info.tile_id, x_left, y_left);
+  }
+
 private:
   const uint16_t _nb_tiles_x;
   const uint16_t _nb_tiles_y;
@@ -57,6 +65,14 @@ private:
   template<int position>
   void set_static_map_data(uint16_t tile_id) {
     _tiles[position].tile_id = tile_id;
+  }
+
+  const Tileset::Tile& tile_at(uint16_t x, uint16_t y) const {
+    return _tileset->at(info_at_tile(x, y).tile_id);
+  }
+  
+  bool is_opaque(uint16_t x, uint16_t y) const {
+    return tile_at(x, y).opaque;
   }
 
 
