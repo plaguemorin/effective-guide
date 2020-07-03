@@ -5,7 +5,7 @@
 
 #include <Engine/Math.hpp>
 
-namespace thing {
+namespace e00::thing {
 struct State {
   constexpr static uint16_t NO_NEXT_STATE = 0xFFFF;
 
@@ -19,7 +19,7 @@ class Info {
   constexpr static auto MAX_STATES = 64;
 
   uint16_t _id;
-  PointI _position;
+  Vec2I _position;
   std::array<State, MAX_STATES> _states;
   uint16_t _state_count;
 
@@ -46,7 +46,7 @@ public:
   explicit Info(uint16_t id, State aState, States&& ... states)
           : _id(id),
             _position(0, 0),
-            _states{0},
+            _states{{}},
             _state_count(sizeof...(States) + 1) {
     static_assert(sizeof...(States) + 1 < MAX_STATES);
     add_state<0>(aState, std::forward<States>(states)...);

@@ -1,6 +1,6 @@
 #include "Engine/ThingSystem/Actor.hpp"
 
-namespace thing {
+namespace e00::thing {
 Actor::Actor() : Actor(type_id<Actor>()) {}
 
 Actor::Actor(type_t type) : Thing(type) {

@@ -2,7 +2,7 @@
 
 #include <Engine/ThingSystem/Thing.hpp>
 
-namespace thing {
+namespace e00::thing {
 class Actor : public Thing {
   uint16_t _health;
 

@@ -5,3 +5,6 @@ cmake-build-*/
 OBJ/
 .idea/
 SDL/SDL2-*/
+
+venv/
+test/*.bmp

@@ -6,13 +6,13 @@
 
 #include <Engine/TypedObject.hpp>
 
-namespace thing {
+namespace e00::thing {
 class Component : public TypedObject {
 protected:
   explicit Component(type_t type_id) : TypedObject(type_id) {}
 
 public:
-  // Leave virtual destructor: ComponentContainer deletes using the base class
+  // Leave the virtual destructor: ComponentContainer deletes using the base class
   virtual ~Component() = default;
 };
 
@@ -21,7 +21,7 @@ class ComponentT : public Component {
 public:
   ComponentT() : Component(type_id<T>()) {}
 
-  // Leave virtual destructor: ComponentContainer deletes using the base class
+  // Leave the virtual destructor: ComponentContainer deletes using the base class
   ~ComponentT() override = default;
 };
 
@@ -56,7 +56,7 @@ public:
     auto free_spot = _components.size();
 
     // Make sure it's unique and find first free spot
-    for (auto i = _components.size() - 1; i >= 0; i--) {
+    for (auto i = _components.size() - 1; i != 0; i--) {
       if (!_components[i])
         free_spot = i;
       else if (_components[i]->type() == type_id)

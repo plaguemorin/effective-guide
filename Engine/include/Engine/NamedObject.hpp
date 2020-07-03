@@ -1,17 +1,33 @@
 #pragma once
 
-#include <array>
+#include <string>
+#include <utility>
 
+namespace e00 {
 class NamedObject {
-  std::array<char, 10> _name;
+  std::string _name;
 
 protected:
-  NamedObject();
+  NamedObject() : _name{ "UNNAMED" } {}
 
-  NamedObject(const NamedObject& other);
+  explicit NamedObject(std::string_view name) : _name(name) {}
+
+  NamedObject(NamedObject &&swap) noexcept : _name(std::move(swap._name)) {}
+
+  ~NamedObject() = default;
 
 public:
-  void set_name(const char *name);
+  [[nodiscard]] std::string_view name() const { return _name; }
 
-  [[nodiscard]] const char *name() const { return _name.data(); }
+  NamedObject(const NamedObject &other) = delete;
+
+  NamedObject &operator=(const NamedObject &rhs) = delete;
+
+  NamedObject &operator=(NamedObject &&rhs) noexcept {
+    if (&rhs != this) {
+      std::swap(_name, rhs._name);
+    }
+    return *this;
+  }
 };
+}// namespace e00impl

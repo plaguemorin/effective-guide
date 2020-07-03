@@ -1,13 +1,14 @@
 #pragma once
 
-#include <array>
+#include <vector>
 #include <Engine/TypedObject.hpp>
 
-template<typename ObjectContained, int size = 64>
+namespace e00::impl {
+template<typename ObjectContained>
 class TypedObjectContainer {
   static_assert(std::is_convertible<ObjectContained *, TypedObject *>::value, "Class must be subclass of TypedObject");
 
-  std::array<ObjectContained *, size> _objects;
+  std::vector<ObjectContained *> _objects;
 
   template<typename T>
   void validate() const {
@@ -15,19 +16,13 @@ class TypedObjectContainer {
   }
 
 protected:
-  const auto& container() const { return _objects; }
+  const auto &container() const { return _objects; }
 
-  auto& container() { return _objects; }
+  auto &container() { return _objects; }
 
 public:
-  TypedObjectContainer() : _objects{} {
-    for (auto& ptr : _objects) {
-      ptr = nullptr;
-    }
-  }
-
   bool register_object(ObjectContained *obj) {
-    for (auto& ptr : _objects) {
+    for (auto &ptr : _objects) {
       if (!ptr) {
         ptr = obj;
         return true;
@@ -38,7 +33,7 @@ public:
   }
 
   bool unreigster_object(const ObjectContained *obj) {
-    for (auto& ptr : _objects) {
+    for (auto &ptr : _objects) {
       if (ptr == obj) {
         ptr = nullptr;
         return true;
@@ -50,43 +45,44 @@ public:
   template<typename T>
   void unregister_all() {
     validate<T>();
-    for (auto& ptr : _objects) {
+    for (auto &ptr : _objects) {
       if (ptr->type == type_id<T>())
         ptr = nullptr;
     }
   }
 
-  template<typename Fnc, typename ...Args>
-  void all(Fnc func, Args&& ...args) const {
-    for (const auto& obj : _objects) {
+  template<typename Fnc, typename... Args>
+  void all(Fnc func, Args &&... args) const {
+    for (const auto &obj : _objects) {
       func(obj, std::forward<Args>(args)...);
     }
   }
 
-  template<typename Fnc, typename ...Args>
-  void all(Fnc func, Args&& ...args) {
-    for (auto& obj : _objects) {
+  template<typename Fnc, typename... Args>
+  void all(Fnc func, Args &&... args) {
+    for (auto &obj : _objects) {
       func(obj, std::forward<Args>(args)...);
     }
   }
 
-  template<typename T, typename Fnc, typename...Args>
-  void all_of_type(Fnc func, Args&& ... args) const {
+  template<typename T, typename Fnc, typename... Args>
+  void all_of_type(Fnc func, Args &&... args) const {
     validate<T>();
-    for (const auto& obj : _objects) {
+    for (const auto &obj : _objects) {
       if (obj->type() == type_id<T>()) {
         func(static_cast<T *>(obj), std::forward<Args>(args)...);
       }
     }
   }
 
-  template<typename T, typename Fnc, typename...Args>
-  void all_of_type(Fnc func, Args&& ... args) {
+  template<typename T, typename Fnc, typename... Args>
+  void all_of_type(Fnc func, Args &&... args) {
     validate<T>();
-    for (auto& obj : _objects) {
+    for (auto &obj : _objects) {
       if (obj && obj->type() == type_id<T>()) {
         func(static_cast<T *>(obj), std::forward<Args>(args)...);
       }
     }
   }
 };
+}// namespace e00impl

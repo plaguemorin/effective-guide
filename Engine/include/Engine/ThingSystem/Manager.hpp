@@ -3,9 +3,9 @@
 #include <Engine/ThingSystem/Thing.hpp>
 #include <Engine/TypedObjectContainer.hpp>
 
-namespace thing {
+namespace e00::thing {
 class Manager
-        : public TypedObjectContainer<Thing> {
+  : public impl::TypedObjectContainer<Thing> {
 public:
   Manager() = default;
 

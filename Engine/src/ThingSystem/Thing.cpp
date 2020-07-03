@@ -2,18 +2,17 @@
 
 #include <cstring>
 
-namespace thing {
+namespace e00::thing {
 Thing::Thing() : Thing(type_id<Thing>()) {
-
 }
 
 Thing::Thing(type_t type)
-        : TypedObject(type),
-          ComponentContainer() {
-  set_name("THING");
+  : TypedObject(type),
+    ComponentContainer(),
+    NamedObject("THING") {
 }
 
 Thing::~Thing() {
 }
 
-}
+}// namespace thing

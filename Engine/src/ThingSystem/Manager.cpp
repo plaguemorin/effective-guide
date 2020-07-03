@@ -1,6 +1,6 @@
 #include "Engine/ThingSystem/Manager.hpp"
 
-namespace thing {
+namespace e00::thing {
 
 Thing *Manager::at(uint16_t tile_x, uint16_t tile_y) const {
   for (const auto& thing : container()) {

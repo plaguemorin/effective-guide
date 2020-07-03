@@ -1,6 +1,6 @@
 #include "Engine/ThingSystem/ComponentContainer.hpp"
 
-namespace thing {
+namespace e00::thing {
 ComponentContainer::ComponentContainer()  {
   for (auto& i : _components) {
     i = nullptr;
