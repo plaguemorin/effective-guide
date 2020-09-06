@@ -3,7 +3,7 @@
 #include <string>
 #include <cstdio>
 
-#include <Engine/ResourceStream.hpp>
+#include <Engine/Stream.hpp>
 
 class ResourceStreamSystemImpl : public ResourceStream {
   FILE *_file;

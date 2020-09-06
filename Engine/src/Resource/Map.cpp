@@ -1,6 +1,6 @@
-#include "Map.hpp"
+#include "Engine/Resource/Map.hpp"
 
-namespace e00::impl {
+namespace e00::resource {
 
 Map::Map(uint8_t width, uint8_t height)
   : resource::Resource(0, type_id<Map>(), ""),

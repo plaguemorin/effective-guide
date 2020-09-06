@@ -14,33 +14,35 @@ State *Loading_Map::update(const std::chrono::milliseconds &delta_since_last_upd
   (void)delta_since_last_update;
 
   switch (_stage) {
-    case LOAD_MAP: load_map(); break;
-    case LOAD_TILESET: load_tileset(); break;
+    case LOAD_MAP: load_map(); return nullptr;
+    case LOAD_TILESET: load_tileset(); return nullptr;
     case COMPUTE: break;
     case ERROR: break;
   }
 
-  return new Running_OnMap(_map_parser.build());
+  //  return new Running_OnMap(_map_parser.build());
+  return nullptr;
 }
-void Loading_Map::render() {
 
+void Loading_Map::render() {
 }
 
 void Loading_Map::load_map() {
   // Load data of map_name
-  if (auto ec = resource_manager()->parse_configuration(_map_path, &_map_parser)) {
-    // TODO: Do something with the error
-    _logger.error(SourceLocation(),  "Failed to load map: {}", ec.message());
+  _map = resource_manager()->load_resource<resource::Map>(_map_path);
+
+  if (_map) {
+    _stage = LOAD_TILESET;
+  } else {
     _stage = ERROR;
-    return;
   }
-
-  _stage = LOAD_TILESET;
-  _logger.info(SourceLocation(), "Loaded map");
 }
-
 
 void Loading_Map::load_tileset() {
+  _logger.info(SourceLocation(), "Loading tileset");
+  resource_manager()->load_resource<resource::Bitmap>("");
+
+  _stage = ERROR;
 }
 
-}// namespace e00impl
+}// namespace e00::impl

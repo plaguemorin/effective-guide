@@ -1,6 +1,6 @@
 #include "ResourceBmp.hpp"
 
-std::unique_ptr<e00::resource::Bitmap> LoadBMP(const std::unique_ptr<e00::ResourceStream>& stream) {
+std::unique_ptr<e00::resource::Bitmap> LoadBMP(const std::unique_ptr<e00::Stream>& stream) {
   uint16_t header;
   stream->read(header);
 
@@ -43,7 +43,7 @@ std::unique_ptr<e00::resource::Bitmap> LoadBMP(const std::unique_ptr<e00::Resour
 
   // Pixel data
   stream->seek(data_offset);
-  auto bmp = e00::resource::Bitmap::CreateMemoryBitmap(e00::Vec2I(width, height), false);
+  auto bmp = e00::resource::Bitmap::CreateMemoryBitmap(e00::Vec2<int>(width, height), false);
 
   for (auto y = 0; y < height; y++) {
     for (auto x = 0; x < width; x++) {
@@ -52,7 +52,7 @@ std::unique_ptr<e00::resource::Bitmap> LoadBMP(const std::unique_ptr<e00::Resour
       switch (bit_count) {
         case 8:
           if (stream->read(color_idx)) {
-            bmp->set_pixel(e00::Vec2I(x, y), color_idx);
+            bmp->set_pixel(e00::Vec2<int>(x, y), color_idx);
           }
           break;
       }

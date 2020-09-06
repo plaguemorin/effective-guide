@@ -9,14 +9,18 @@
 
 #include <Engine/System/OutputScreen.hpp>
 #include <Engine/System/InputSystem.hpp>
-#include <Engine/System/ResourceStreamLoader.hpp>
-#include <Engine/System/LoggerSink.hpp>
+#include <Engine/System/RootStreamFactory.hpp>
+#include <Engine/Stream/StreamFactory.hpp>
+
+#include <Engine/ResourceSystem/Manager.hpp>
+
+#include <Logger/Logger.hpp>
+#include <Logger/LoggerSink.hpp>
 
 namespace e00 {
 namespace impl {
   class State;
-  class Logger;
-  class ResourceManager;
+  class ScriptEngine;
 }// namespace impl
 
 /**
@@ -26,13 +30,16 @@ class Engine {
   friend class impl::State;
   const static std::chrono::milliseconds UPDATE_PERIOD;
 
-  impl::Logger *_logger;
+  impl::Logger _logger;
+
+  sys::RootStreamFactory *_root_stream_factory;
   std::array<sys::InputSystem *, 4> _input_systems;
-  std::unique_ptr<impl::ResourceManager> _resource_manager;
+  std::unique_ptr<resource::Manager> _resource_manager;
   sys::OutputScreen *_output_screen;
   std::chrono::milliseconds _lag;
   std::chrono::milliseconds _last_render;
   std::unique_ptr<impl::State> _current_state;
+  std::unique_ptr<impl::ScriptEngine> _script_engine;
 
   // Processes a single update
   void tick_update(std::chrono::milliseconds delta);
@@ -45,14 +52,25 @@ class Engine {
   // Values read from configuration ([setup] section)
   std::unordered_map<std::string, std::string> _setup;
 
+  explicit Engine(sys::RootStreamFactory *root_stream_factory);
+
 public:
   static void add_logger_sink(sys::LoggerSink *logger_sink);
 
-  explicit Engine(sys::ResourceStreamLoader *stream_loader);
+  /**
+   * Creates a new instance of the engine
+   *
+   * The owner is responsible to keep the root_stream_factory alive for the entire
+   * lifetime of the returned engine instance.
+   *
+   * @param root_stream_factory the stream factory to use to load paks and resources
+   * @return the engine instance or nullptr if an error occurred
+   */
+  static std::unique_ptr<Engine> Create(sys::RootStreamFactory *root_stream_factory);
 
   Engine(const Engine &) = delete;
 
-  Engine(Engine &&) noexcept;
+  Engine(Engine &&) noexcept = delete;
 
   ~Engine();
 
@@ -97,8 +115,16 @@ public:
     _setup.clear();
   }
 
+  /**
+   * Sets the render screen
+   * @param output_screen the screen to render to
+   */
   void set_output_screen(sys::OutputScreen *output_screen) { _output_screen = output_screen; }
 
+  /**
+   * Gets the current render screen
+   * @return the current render screen, if set (nullptr otherwise)
+   */
   [[nodiscard]] sys::OutputScreen *get_output_screen() const { return _output_screen; }
 
   /**
@@ -109,10 +135,10 @@ public:
   /**
    * Adds a resource pack
    *
-   * @param pack_loader the resource stream loader to use for this new pack
-   * @return
+   * @param pack_name the name of the new pack; this will be loaded by the root stream factory
+   * @return error code, if any
    */
-  std::error_code add_resource_pack(sys::ResourceStreamLoader *pack_loader);
+  std::error_code add_resource_pack(const std::string& pack_name);
 
   /**
    * An input system that needs to be queried when updating
@@ -122,11 +148,31 @@ public:
    */
   std::error_code add_input_system(sys::InputSystem *input_system);
 
+  /**
+   * Engine is currently running and needs to be updated
+   *
+   * @return true if the engine is valid and can continue to accept updates
+   */
   [[nodiscard]] bool running() const;
 
+  /**
+   * Updates physics, timers, processes input systems...
+   *
+   * @param delta_since_last_call time elapsed since last call to this method
+   */
   void update(std::chrono::milliseconds delta_since_last_call);
 
+  /**
+   * Draw the current frame to the current output screen
+   */
   void render();
+
+  /**
+   * Forces a map to start
+   *
+   * @param map_name the map name to load
+   */
+  void play_map(const std::string &map_name);
 };
 
 }// namespace e00

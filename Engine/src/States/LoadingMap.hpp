@@ -3,9 +3,8 @@
 #include <Engine/Math.hpp>
 
 #include "State.hpp"
-#include "../Resource/Map.hpp"
-#include "../Tileset.hpp"
-#include "../Loaders/MapConfigParser.hpp"
+#include <Engine/ResourceSystem/Resources/Map.hpp>
+#include "Tileset.hpp"
 
 namespace e00::impl {
 class Loading_Map : public State {
@@ -17,9 +16,11 @@ class Loading_Map : public State {
   };
 
   Logger _logger;
+
   const std::string _map_path;
-  MapConfigParser _map_parser;
   Stage _stage;
+
+  resource::ResourcePtr<resource::Map> _map;
 
   void load_map();
   void load_tileset();
@@ -31,7 +32,7 @@ public:
 
   Loading_Map(Loading_Map &&) = delete;
 
-  virtual ~Loading_Map() = default;
+  ~Loading_Map() override = default;
 
   Loading_Map &operator=(const Loading_Map &) = delete;
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <windows.h>
-#include <Engine/ResourceStream.hpp>
+#include <Engine/Stream/Stream.hpp>
 
-class Win32FileStream : public ResourceStream {
+class Win32FileStream : public e00::Stream {
   HANDLE _file;
 
 public:
@@ -11,11 +11,8 @@ public:
 
   ~Win32FileStream() override;
 
-  bool seek(size_t size) override;
+protected:
+  std::error_code real_read(size_t size, void *data) override;
 
-  size_t current_position() override;
-
-  size_t read(size_t max_size, void *data) override;
+  std::error_code real_seek(size_t size) override;
 };
-
-

@@ -7,6 +7,7 @@ enum class EngineErrorCode {
   not_configured = 1,
   invalid_argument,
   failed_to_initialize_input,
+  no_stream_loader_for_pak,
   too_many_input_systems,
   duplicate_resource,
   dependent_resource_not_found,

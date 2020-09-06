@@ -4,7 +4,7 @@
 #include <Engine.hpp>
 
 namespace e00::impl {
-Running_OnMap::Running_OnMap(Map &&map) : _map(std::move(map)) {
+Running_OnMap::Running_OnMap() {
 }
 
 Running_OnMap::~Running_OnMap() {
@@ -21,7 +21,7 @@ State *Running_OnMap::update(const std::chrono::milliseconds &delta_since_last_u
 }
 
 void Running_OnMap::render() {
-  auto *output_screen = _engine->get_output_screen();
+  /*auto *output_screen = _engine->get_output_screen();
   if (output_screen == nullptr) {
     return;
   }
@@ -42,6 +42,6 @@ void Running_OnMap::render() {
           source);
       }
     }
-  }
+  }*/
 }
 }// namespace e00impl

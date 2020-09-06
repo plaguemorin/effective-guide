@@ -1,7 +1,7 @@
 #pragma once
 
 #include <system_error>
-#include "InputEvent.hpp"
+#include <Engine/System/InputEvent.hpp>
 
 namespace e00::sys {
 class InputSystem {

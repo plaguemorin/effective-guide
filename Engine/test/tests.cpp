@@ -4,8 +4,8 @@
 
 #include <Engine.hpp>
 #include <Engine/Math.hpp>
-#include <Engine/System/LoggerSink.hpp>
-#include "Logger.hpp"
+#include <Logger/LoggerSink.hpp>
+#include <Logger/Logger.hpp>
 
 double ColorCompare_REF(int r1, int g1, int b1, int r2, int g2, int b2) {
   double luma1 = (r1 * 299 + g1 * 587 + b1 * 114) / (255.0 * 1000);

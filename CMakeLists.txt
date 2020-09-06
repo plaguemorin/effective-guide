@@ -30,10 +30,17 @@ if (ENABLE_PCH)
     target_precompile_headers(project_options INTERFACE <vector> <string> <map> <utility>)
 endif ()
 
+if (NOT UNIX AND NOT WIN32)
+    add_compile_options(-fno-rtti)
+endif ()
+
 add_subdirectory(vendor/magic_enum)
+add_subdirectory(vendor/lua)
 add_subdirectory(lodepng)
 add_subdirectory(Engine)
 add_subdirectory(Game_TEST)
 add_subdirectory(Game_WIN)
 
+if (NOT UNIX AND NOT WIN32)
     add_subdirectory(Game_DOS)
+endif ()

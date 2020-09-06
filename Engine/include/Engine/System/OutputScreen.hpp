@@ -3,7 +3,7 @@
 #include <memory>
 
 #include <Engine/Math.hpp>
-#include <Engine/Resource/Bitmap.hpp>
+#include <Engine/ResourceSystem/Resources/Bitmap.hpp>
 
 namespace e00::sys {
 class OutputScreen : public resource::Bitmap {

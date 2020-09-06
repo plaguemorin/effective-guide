@@ -3,12 +3,13 @@
 #include <array>
 #include <cstdint>
 
-#include <Engine/CommonTypes.hpp>
-#include <Engine/Math.hpp>
 #include <Engine/TypedObject.hpp>
 #include <Engine/NamedObject.hpp>
+
+#include <Engine/CommonTypes.hpp>
+#include <Engine/Math.hpp>
 #include <Engine/ThingSystem/ComponentContainer.hpp>
-#include <Engine/Resource/Resource.hpp>
+#include <Engine/ResourceSystem/Resource.hpp>
 
 /*
  * While a component system would be nice,
@@ -34,11 +35,11 @@ class Thing :
         public TypedObject,
         public ComponentContainer,
         public NamedObject {
-  Vec2I _position;
+  Vec2<int> _position;
   int _view_distance;
   int _fov;
   Facing _facing;
-  resource_id_t _sprite_id;
+  resource::id_t _sprite_id;
 
 protected:
   explicit Thing(type_t type);

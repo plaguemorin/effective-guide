@@ -4,8 +4,7 @@
 #include <string>
 #include <system_error>
 
-#include <Engine/RuntimeConfig/ParserListener.hpp>
-#include "../ResourceManager.hpp"
+#include <Engine/ResourceSystem/Manager.hpp>
 
 namespace e00 {
 class Engine;
@@ -18,7 +17,7 @@ namespace impl {
   class State {
   protected:
     Engine *_engine;
-    const std::unique_ptr<impl::ResourceManager>& resource_manager();
+    const std::unique_ptr<resource::Manager>& resource_manager();
 
   public:
     explicit State()

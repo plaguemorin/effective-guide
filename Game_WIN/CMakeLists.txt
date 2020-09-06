@@ -14,15 +14,15 @@ add_executable(Game_WIN WIN32
         src/Win32Window.hpp
         src/Win32Window.cpp
         src/Win32FileStream.cpp
-        src/Win32FileStream.hpp)
+        src/Win32FileStream.hpp src/Win32StreamFactory.cpp src/Win32StreamFactory.hpp src/string_2_wstring.hpp)
 
 target_include_directories(Game_WIN PUBLIC
         $ENV{UniversalCRTSdkDir}/Include/ucrt
-        $ENV{UniversalCRTSdkDir}/Include/10.0.10056.0/ucrt
+        $ENV{UniversalCRTSdkDir}/Include/10.0.19041.0/ucrt
         )
 
 target_link_libraries(Game_WIN PUBLIC Engine01 project_options project_warnings)
-target_compile_definitions(Game_WIN PUBLIC WIN32_LEAN_AND_MEAN UNICODE)
+target_compile_definitions(Game_WIN PUBLIC WIN32_LEAN_AND_MEAN UNICODE NOMINMAX)
 
 set_target_properties(Game_WIN 
     PROPERTIES 

@@ -18,6 +18,7 @@ std::string EngineErrCategory::message(int ev) const {
     case e00::EngineErrorCode::too_many_input_systems: return "too many input systems";
     case e00::EngineErrorCode::invalid_argument: return "invalid argument";
     case e00::EngineErrorCode::dependent_resource_not_found: return "dependent resource not found";
+    case e00::EngineErrorCode::no_stream_loader_for_pak: return "no stream loader for pak";
   }
   return {};
 }

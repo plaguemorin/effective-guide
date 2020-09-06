@@ -21,7 +21,7 @@ void signal_handler(int sig) {
   raise(sig);
 }
 
-class DosFS : public e00::sys::ResourceStreamLoader {
+class DosFS : public e00::sys::RootStreamFactory {
   const std::string _base_directory;
 
 public:
@@ -31,7 +31,11 @@ public:
 
   ~DosFS() override = default;
 
-  std::unique_ptr<e00::ResourceStream> load_file(const std::string &fileName) override {
+  std::unique_ptr<e00::sys::StreamFactory> load_pack(const std::string &pack_name) override {
+    return std::unique_ptr<DosFS>(new DosFS(_base_directory + pack_name + ".pak/"));
+  }
+
+  std::unique_ptr<e00::Stream> open_stream(const std::string &fileName) override {
     return StdFile::CreateFromFilename(_base_directory + fileName);
   }
 };
@@ -91,21 +95,18 @@ int main(int argc, char **argv) {
     std::puts("Found VGA");
   }
 
-  auto initial_video_mode = video_get_current_mode();
+//  auto initial_video_mode = video_get_current_mode();
 
   timer_init();
   std::puts("Initialize Timer Handler: Done");
 
   // Fire up the engine
   DosFS dos_fs;
-  e00::Engine engine(&dos_fs);
+  auto engine = e00::Engine::Create(&dos_fs);
 
-  const auto video_requested = engine.get_configuration("video");
+  const auto video_requested = engine->get_configuration("video");
   std::puts("Video subsystem requested: ");
   std::puts(video_requested.data());
-
-  engine.add_resource_pack(new DosFS("RES/base.pak/"));
-  engine.add_resource_pack(new DosFS("RES/myhouse.pak/"));
 
   std::puts("Press ENTER to continue");
   std::getchar();
@@ -113,20 +114,22 @@ int main(int argc, char **argv) {
   // Last chance before we hook the inputs
 
   KeyboardEventHandler keyboard_event_handler;
-  engine.add_input_system(&keyboard_event_handler);
+  engine->add_input_system(&keyboard_event_handler);
   std::puts("Initialize Keyboard Handler: Done");
 
   MouseComDrv mouse_drv;
   if (mouse_drv.has_mouse()) {
-    engine.add_input_system(&mouse_drv);
+    engine->add_input_system(&mouse_drv);
     std::puts("Initialize Mouse: Mouse found");
   } else {
     std::puts("Initialize Mouse: Mouse not found");
   }
 
   // who cares about anything, set vga 320x200 8bit
+/*
   video_set_current_mode(0x13);
   engine.set_output_screen(video_get_screen());
+*/
 
   /*
   DOSMode13 gfx;
@@ -135,39 +138,24 @@ int main(int argc, char **argv) {
     return -1;
   }
   gfx.initialize();
-
-  gfx.setColor(0, 0x140c1c);
-  gfx.setColor(1, 0x442434);
-  gfx.setColor(2, 0x30346d);
-  gfx.setColor(3, 0x4e4a4e);
-  gfx.setColor(4, 0x854c30);
-  gfx.setColor(5, 0x346524);
-  gfx.setColor(6, 0xd04648);
-  gfx.setColor(7, 0x757161);
-  gfx.setColor(8, 0x597dce);
-  gfx.setColor(19, 0xd27d2c);
-  gfx.setColor(10, 0x8595a1);
-  gfx.setColor(11, 0x6daa2c);
-  gfx.setColor(12, 0xd2aa99);
-  gfx.setColor(13, 0x6dc2ca);
-  gfx.setColor(14, 0xdad45e);
-  gfx.setColor(15, 0xdeeed6);
   */
 
   auto current_time = timer_since_start();
-  engine.clear_configuration();
+  engine->clear_configuration();
 
-  while (engine.running()) {
+  engine->play_map("Overworld");
+
+  while (engine->running()) {
     const auto tss = timer_since_start();
     mouse_drv.mouse_update();
     __dpmi_yield();
-    engine.update(tss - current_time);
-    engine.render();
+    engine->update(tss - current_time);
+//    engine.render();
     current_time = tss;
   }
 
-  delete engine.get_output_screen();
-  video_set_current_mode(initial_video_mode);
+  delete engine->get_output_screen();
+//  video_set_current_mode(initial_video_mode);
   std::puts("Exit");
 
   timer_shutdown();

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include <Engine/Resource/Bitmap.hpp>
+#include <Engine/ResourceSystem/Resources/Bitmap.hpp>
 
 namespace e00::impl {
 class Tileset {

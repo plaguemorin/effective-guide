@@ -1,6 +1,5 @@
 #include "State.hpp"
 #include <Engine.hpp>
-#include "../ResourceManager.hpp"
 
 namespace e00::impl {
 class InitialState : public State {
@@ -37,7 +36,7 @@ State *CreateQuitState() {
   return new ExitState();
 }
 
-const std::unique_ptr<impl::ResourceManager> &State::resource_manager() {
+const std::unique_ptr<resource::Manager> &State::resource_manager() {
   return _engine->_resource_manager;
 }
 }// namespace e00::impl

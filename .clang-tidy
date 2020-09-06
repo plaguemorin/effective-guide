@@ -1,7 +1,3 @@
----
-Checks:          '*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-modernize-use-trailing-return-type,-llvm-*'
-WarningsAsErrors: '1'
-HeaderFilterRegex: ''
-FormatStyle:     none
-
-
+CheckOptions:
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: 1
