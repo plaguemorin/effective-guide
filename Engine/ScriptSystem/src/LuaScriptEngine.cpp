@@ -5,13 +5,17 @@
 constexpr auto context_global_var_name = "__ctx";
 
 namespace {
-e00::impl::scripting::detail::BoxedValue lua_to_boxed_value(lua_State *L, int n) {
+e00::impl::scripting::detail::BoxedValue lua_to_boxed_value(lua_State *L, int n, const e00::impl::scripting::detail::TypeInfo& info) {
   switch (lua_type(L, n)) {
     case LUA_TNIL:
       break;
 
     case LUA_TNUMBER:
-      return e00::impl::scripting::detail::BoxedValue(lua_tonumber(L, n));
+      {
+        // in lua this could be float, double, int, long...
+
+        return e00::impl::scripting::detail::BoxedValue(lua_tointegerx(L, n, nullptr));
+      }
 
     case LUA_TBOOLEAN:
       return e00::impl::scripting::detail::BoxedValue(lua_toboolean(L, n));
@@ -34,6 +38,26 @@ e00::impl::scripting::detail::BoxedValue lua_to_boxed_value(lua_State *L, int n)
     case LUA_TLIGHTUSERDATA:
       break;
   }
+
+  return e00::impl::scripting::detail::BoxedValue();
+}
+
+int lua_trampoline_handle_return(lua_State *L, const e00::impl::scripting::detail::BoxedValue &boxed_rv) {
+  if (boxed_rv.is_void()) {
+    return 0;
+  }
+
+  // Is it a number ?
+  if (boxed_rv.is_arithmetic()) {
+
+  } else if (boxed_rv.is_pointer()) {
+
+  } else if (boxed_rv.is_reference()) {
+
+  }
+
+
+  return 0;
 }
 
 extern "C" int lua_trampoline(lua_State *L) {
@@ -47,7 +71,10 @@ extern "C" int lua_trampoline(lua_State *L) {
   }
 
   auto args_count = lua_gettop(L);
-  std::cout << "Called " << fn_name << ". has " << fn->parameter_count() << " parameters. got " << args_count << " from script";
+//  std::cout << "Called "
+//            << fn_name << ". has "
+//            << fn->parameter_count() << " parameters. got "
+//            << args_count << " from script";
 
   // Count arguments
   if (args_count != fn->parameter_count()) {
@@ -56,13 +83,20 @@ extern "C" int lua_trampoline(lua_State *L) {
   }
 
   //
-  std::vector<e00::impl::scripting::detail::BoxedValue> values;
-  values.resize(args_count);
-  for (int i = 0; i <= fn->parameter_count(); i++) {
-    values[i] = lua_to_boxed_value(L, i + 1);
+  if (fn->parameter_count() > 0) {
+    std::vector<e00::impl::scripting::detail::BoxedValue> values;
+    values.reserve(fn->parameter_count());
+
+    const auto& params = fn->parameters();
+
+    for (int i = 0; i < fn->parameter_count(); i++) {
+      values.emplace_back(lua_to_boxed_value(L, i + 1, params[i]));
+    }
+
+    return lua_trampoline_handle_return(L, fn->operator()(e00::impl::scripting::detail::FunctionParams(values)));
   }
 
-  return 0;
+  return lua_trampoline_handle_return(L, fn->operator()(e00::impl::scripting::detail::FunctionParams()));
 }
 }// namespace
 
@@ -70,6 +104,7 @@ namespace e00::impl::scripting::lua {
 LuaScriptEngine::LuaScriptEngine()
   : ScriptEngine(),
     _state(luaL_newstate()) {
+  luaL_openlibs(_state);
 }
 
 LuaScriptEngine::~LuaScriptEngine() {

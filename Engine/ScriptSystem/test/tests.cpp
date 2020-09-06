@@ -4,9 +4,13 @@
 #include <Engine/ScriptSystem/ScriptEngine.hpp>
 
 namespace {
-bool returns_true() { return true; }
+bool returns_true() {
+  return true;
+}
 
-bool accepts_an_int(int i) { return i == 3; }
+bool accepts_an_int(int i) {
+  return i == 3;
+}
 }// namespace
 
 TEST_CASE("Script System initializes") {
@@ -14,6 +18,11 @@ TEST_CASE("Script System initializes") {
 
 
   std::cout << "Script engine: " << script->engine_name() << "\n";
+}
+
+TEST_CASE("Can log from script") {
+  auto script = e00::impl::ScriptEngine::Create();
+  script->parse("\nprint(\"Hello World\")\n");
 }
 
 TEST_CASE("Can call free functions") {

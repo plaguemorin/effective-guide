@@ -36,9 +36,7 @@ struct NativeFunctionT final : ProxyFunction {
 
 protected:
   BoxedValue do_call(const FunctionParams &params) const override {
-    //    return call_func(static_cast<Func *>(nullptr), _f, params);
-    (void)params;
-    return {};
+    return call_func(static_cast<Func *>(nullptr), _f, params);
   }
 
 private:

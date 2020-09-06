@@ -19,6 +19,8 @@ struct FunctionParams {
     : m_begin(&vec.front()), m_end(&vec.front() + vec.size()) {
   }
 
+  FunctionParams() : m_begin(nullptr), m_end(nullptr) {}
+
   template<size_t Size>
   constexpr explicit FunctionParams(const std::array<BoxedValue, Size> &a)
     : m_begin(std::begin(a)), m_end(std::end(a)) {
@@ -56,4 +58,4 @@ private:
   const BoxedValue *m_begin = nullptr;
   const BoxedValue *m_end = nullptr;
 };
-}// namespace e00::impl::scripting
+}// namespace e00::impl::scripting::detail
