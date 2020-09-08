@@ -1,8 +1,11 @@
 #pragma once
 
+#include <array>
+#include <vector>
+
 #include "BoxedValue.hpp"
 
-namespace e00::impl::scripting::detail {
+namespace e00::impl::scripting {
 /**
  *
  */

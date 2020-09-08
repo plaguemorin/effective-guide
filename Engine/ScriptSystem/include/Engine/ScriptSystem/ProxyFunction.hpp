@@ -1,10 +1,12 @@
 #pragma once
 
+#include <vector>
+
 #include "TypeInfo.hpp"
 #include "BoxedValue.hpp"
 #include "FunctionParams.hpp"
 
-namespace e00::impl::scripting::detail {
+namespace e00::impl::scripting {
 /**
  * A callable method
  * This is the only function the script engine impl can deal with
@@ -16,7 +18,7 @@ class ProxyFunction {
 
 protected:
   explicit ProxyFunction(std::vector<TypeInfo> types, TypeInfo return_type)
-    : _param_count(types.size()),
+    : _param_count(static_cast<int>(types.size())),
       _params(std::move(types)),
       _return_type(return_type) {
   }

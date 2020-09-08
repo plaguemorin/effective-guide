@@ -3,7 +3,7 @@
 #include <functional>
 #include <memory>
 
-#include "BoxedValue.hpp"
+#include "../BoxedValue.hpp"
 #include "Utils.hpp"
 #include "NativeFunctionT.hpp"
 

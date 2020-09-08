@@ -2,31 +2,68 @@
 
 #include <iostream>
 
-constexpr auto context_global_var_name = "__ctx";
-
 namespace {
-e00::impl::scripting::detail::BoxedValue lua_to_boxed_value(lua_State *L, int n, const e00::impl::scripting::detail::TypeInfo& info) {
+using namespace e00::impl::scripting;
+
+BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   switch (lua_type(L, n)) {
     case LUA_TNIL:
+      {
+      }
       break;
 
     case LUA_TNUMBER:
-      {
+      if (info.is_arithmetic()) {
         // in lua this could be float, double, int, long...
-
-        return e00::impl::scripting::detail::BoxedValue(lua_tointegerx(L, n, nullptr));
+        if (info.is_compatible<float>()) {
+          return BoxedValue(lua_tonumberx(L, n, nullptr));
+        } else if (info.is_compatible<double>()) {
+          return BoxedValue((double)lua_tonumberx(L, n, nullptr));
+        } else if (info.is_compatible<int>()) {
+          return BoxedValue(lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<unsigned int>()) {
+          return BoxedValue((unsigned int)lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<long>()) {
+          return BoxedValue((long)lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<unsigned long>()) {
+          return BoxedValue((unsigned long)lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<char>()) {
+          return BoxedValue((char)lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<unsigned char>()) {
+          return BoxedValue((unsigned char)lua_tointegerx(L, n, nullptr));
+        } else if (info.is_compatible<bool>()) {
+          return BoxedValue((bool)lua_toboolean(L, n));
+        }
       }
 
+      // Wrong type
+      break;
+
     case LUA_TBOOLEAN:
-      return e00::impl::scripting::detail::BoxedValue(lua_toboolean(L, n));
+      if (info.is_compatible<bool>()) {
+        return BoxedValue((bool)lua_toboolean(L, n));
+      }
+      break;
 
     case LUA_TSTRING:
-      return e00::impl::scripting::detail::BoxedValue(std::string_view(lua_tostring(L, n)));
+      {
+        size_t len;
+        const auto rawstr = lua_tolstring(L, n, &len);
+
+        if (info.is_compatible<std::string>()) {
+          return BoxedValue(std::string(rawstr, len));
+        } else if (info.is_compatible<std::string_view>()) {
+          return BoxedValue(std::string_view(rawstr, len));
+        }
+        break;
+      }
 
     case LUA_TTABLE:
+      // a lua map
       break;
 
     case LUA_TFUNCTION:
+      // build a proxy function
       break;
 
     case LUA_TUSERDATA:
@@ -39,13 +76,17 @@ e00::impl::scripting::detail::BoxedValue lua_to_boxed_value(lua_State *L, int n,
       break;
   }
 
-  return e00::impl::scripting::detail::BoxedValue();
+  // Param has wrong value
+  std::cerr << "Param " << n << " has wrong type\n";
+  return BoxedValue();
 }
 
-int lua_trampoline_handle_return(lua_State *L, const e00::impl::scripting::detail::BoxedValue &boxed_rv) {
+int lua_trampoline_handle_return(lua_State *L, const BoxedValue &boxed_rv) {
   if (boxed_rv.is_void()) {
     return 0;
   }
+
+  (void)L;
 
   // Is it a number ?
   if (boxed_rv.is_arithmetic()) {
@@ -61,9 +102,9 @@ int lua_trampoline_handle_return(lua_State *L, const e00::impl::scripting::detai
 }
 
 extern "C" int lua_trampoline(lua_State *L) {
-  auto ctx = static_cast<e00::impl::scripting::lua::LuaScriptEngine *>(lua_touserdata(L, lua_upvalueindex(1)));
-  auto fn = static_cast<e00::impl::scripting::detail::ProxyFunction *>(lua_touserdata(L, lua_upvalueindex(2)));
-  auto fn_name = lua_tolstring(L, lua_upvalueindex(3), nullptr);
+//  auto ctx = static_cast<lua::LuaScriptEngine *>(lua_touserdata(L, lua_upvalueindex(1)));
+  auto fn = static_cast<ProxyFunction *>(lua_touserdata(L, lua_upvalueindex(2)));
+//  auto fn_name = lua_tolstring(L, lua_upvalueindex(3), nullptr);
 
   if (!fn) {
     // oops!
@@ -71,10 +112,10 @@ extern "C" int lua_trampoline(lua_State *L) {
   }
 
   auto args_count = lua_gettop(L);
-//  std::cout << "Called "
-//            << fn_name << ". has "
-//            << fn->parameter_count() << " parameters. got "
-//            << args_count << " from script";
+  //  std::cout << "Called "
+  //            << fn_name << ". has "
+  //            << fn->parameter_count() << " parameters. got "
+  //            << args_count << " from script";
 
   // Count arguments
   if (args_count != fn->parameter_count()) {
@@ -84,19 +125,19 @@ extern "C" int lua_trampoline(lua_State *L) {
 
   //
   if (fn->parameter_count() > 0) {
-    std::vector<e00::impl::scripting::detail::BoxedValue> values;
-    values.reserve(fn->parameter_count());
+    std::vector<BoxedValue> values;
+    values.reserve(static_cast<size_t>(fn->parameter_count()));
 
-    const auto& params = fn->parameters();
+    const auto &params = fn->parameters();
 
     for (int i = 0; i < fn->parameter_count(); i++) {
-      values.emplace_back(lua_to_boxed_value(L, i + 1, params[i]));
+      values.emplace_back(lua_to_boxed_value(L, i + 1, params.at(static_cast<size_t>(i))));
     }
 
-    return lua_trampoline_handle_return(L, fn->operator()(e00::impl::scripting::detail::FunctionParams(values)));
+    return lua_trampoline_handle_return(L, fn->operator()(FunctionParams(values)));
   }
 
-  return lua_trampoline_handle_return(L, fn->operator()(e00::impl::scripting::detail::FunctionParams()));
+  return lua_trampoline_handle_return(L, fn->operator()(FunctionParams()));
 }
 }// namespace
 
@@ -116,7 +157,7 @@ bool LuaScriptEngine::valid_fn_name(const std::string &fn_name) {
   return true;
 }
 
-void LuaScriptEngine::add_function(const std::string &fn_name, const std::shared_ptr<scripting::detail::ProxyFunction> &fn) {
+void LuaScriptEngine::add_function(const std::string &fn_name, const std::shared_ptr<scripting::ProxyFunction> &fn) {
   _registered_fns.insert(std::make_pair(fn_name, fn));
 
   lua_pushlightuserdata(_state, this);

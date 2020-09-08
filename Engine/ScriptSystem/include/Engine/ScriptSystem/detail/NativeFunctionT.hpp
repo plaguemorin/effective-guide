@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Utils.hpp"
-#include "ProxyFunction.hpp"
+#include "../ProxyFunction.hpp"
 #include "FunctionSignature.hpp"
 #include "CallUtils.hpp"
 #include "AttributeAccess.hpp"

@@ -3,9 +3,10 @@
 #include <memory>
 #include <utility>
 
-#include "BoxedValue.hpp"
-#include "FunctionParams.hpp"
+#include "../BoxedValue.hpp"
+#include "../FunctionParams.hpp"
 #include "HandleReturn.hpp"
+#include "CastHelpers.hpp"
 
 namespace e00::impl::scripting::detail {
 template<typename Callable, typename Ret, typename... Params, size_t... I>

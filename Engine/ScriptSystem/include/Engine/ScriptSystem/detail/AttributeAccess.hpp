@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ProxyFunction.hpp"
+#include "../ProxyFunction.hpp"
 #include "HandleReturn.hpp"
 
 namespace e00::impl::scripting::detail {

@@ -17,7 +17,7 @@ protected:
 
   virtual bool valid_fn_name(const std::string &fn_name) = 0;
 
-  virtual void add_function(const std::string &fn_name, const std::shared_ptr<scripting::detail::ProxyFunction> &fn) = 0;
+  virtual void add_function(const std::string &fn_name, const std::shared_ptr<scripting::ProxyFunction> &fn) = 0;
 
 public:
   static std::unique_ptr<ScriptEngine> Create();

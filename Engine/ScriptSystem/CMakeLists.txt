@@ -8,10 +8,17 @@ add_library(Engine01_ScriptSystem STATIC
         include/Engine/ScriptSystem/ScriptEngine.hpp
         src/LuaScriptEngine.cpp
         src/LuaScriptEngine.hpp
-        include/Engine/ScriptSystem/detail/ProxyFunction.hpp
-        include/Engine/ScriptSystem/detail/BoxedValue.hpp
-        include/Engine/ScriptSystem/detail/FunctionParams.hpp
-        include/Engine/ScriptSystem/detail/FunctionSignature.hpp include/Engine/ScriptSystem/detail/HandleReturn.hpp include/Engine/ScriptSystem/detail/Utils.hpp include/Engine/ScriptSystem/detail/NativeFunctionT.hpp include/Engine/ScriptSystem/detail/CallUtils.hpp include/Engine/ScriptSystem/detail/AttributeAccess.hpp include/Engine/ScriptSystem/detail/TypeInfo.hpp)
+        include/Engine/ScriptSystem/BoxedValue.hpp
+        include/Engine/ScriptSystem/TypeInfo.hpp
+        include/Engine/ScriptSystem/FunctionParams.hpp
+        include/Engine/ScriptSystem/ProxyFunction.hpp
+        include/Engine/ScriptSystem/detail/FunctionSignature.hpp
+        include/Engine/ScriptSystem/detail/HandleReturn.hpp
+        include/Engine/ScriptSystem/detail/Utils.hpp
+        include/Engine/ScriptSystem/detail/NativeFunctionT.hpp
+        include/Engine/ScriptSystem/detail/CallUtils.hpp
+        include/Engine/ScriptSystem/detail/AttributeAccess.hpp
+        include/Engine/ScriptSystem/detail/CastHelpers.hpp)
 
 
 target_include_directories(Engine01_ScriptSystem PRIVATE src)
