@@ -8,7 +8,7 @@ template<typename T, typename Class>
 class Attribute_Access final : public ProxyFunction {
 public:
   explicit Attribute_Access(T Class::*t_attr)
-    : ProxyFunction(1),
+    : ProxyFunction({ user_type<Class>() }, user_type<T>()),
       m_attr(t_attr) {
   }
 
@@ -45,12 +45,6 @@ private:
     }
   }
 
-//
-//  static std::vector<Type_Info> param_types() {
-//    return { user_type<T>(), user_type<Class>() };
-//  }
-//
-//  std::vector<Type_Info> m_param_types{ user_type<T>(), user_type<Class>() };
   T Class::*m_attr;
 };
 

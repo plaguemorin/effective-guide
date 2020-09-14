@@ -29,8 +29,11 @@ TypeInfo build_return_type_list(Ret (*)(Params...)) {
  */
 template<typename Func, typename Callable>
 struct NativeFunctionT final : ProxyFunction {
-  explicit NativeFunctionT(Callable f)
-    : ProxyFunction(build_param_type_list(static_cast<Func *>(nullptr)), build_return_type_list(static_cast<Func *>(nullptr))),
+  explicit NativeFunctionT(Callable f, int argcnt)
+    : ProxyFunction(
+      build_param_type_list(static_cast<Func *>(nullptr)),
+      build_return_type_list(static_cast<Func *>(nullptr)),
+      argcnt),
       _f(std::move(f)) {
   }
 
@@ -47,15 +50,15 @@ template<typename Func, bool Is_Noexcept, bool Is_Member, bool Is_MemberObject, 
 auto make_callable_impl(Func &&func, FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, Is_Member, Is_MemberObject, Is_Object>) {
   if constexpr (Is_MemberObject) {
     // we now that the Param pack will have only one element, so we are safe expanding it here
-    return make_shared_base<ProxyFunction, Attribute_Access<Ret, std::decay_t<Param>...>>(std::forward<Func>(func));
+    return make_unique_base<ProxyFunction, Attribute_Access<Ret, std::decay_t<Param>...>>(std::forward<Func>(func));
   } else if constexpr (Is_Member) {
     auto call = [func = std::forward<Func>(func)](auto &&obj, auto &&... param) noexcept(Is_Noexcept) -> decltype(auto) {
       return ((get_first_param(Function_Params<Param...>{}, obj).*func)(std::forward<decltype(param)>(param)...));
     };
 
-    return make_shared_base<ProxyFunction, NativeFunctionT<Ret(Param...), decltype(call)>>(std::move(call));
+    return make_unique_base<ProxyFunction, NativeFunctionT<Ret(Param...), decltype(call)>>(std::move(call), sizeof...(Param));
   } else {
-    return make_shared_base<ProxyFunction, NativeFunctionT<Ret(Param...), std::decay_t<Func>>>(std::forward<Func>(func));
+    return make_unique_base<ProxyFunction, NativeFunctionT<Ret(Param...), std::decay_t<Func>>>(std::forward<Func>(func), sizeof...(Param));
   }
 }
 

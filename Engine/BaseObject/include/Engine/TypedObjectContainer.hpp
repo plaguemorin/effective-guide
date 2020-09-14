@@ -46,7 +46,7 @@ public:
   void unregister_all() {
     validate<T>();
     for (auto &ptr : _objects) {
-      if (ptr->type == type_id<T>())
+      if (ptr->get_type_info == type_id<T>())
         ptr = nullptr;
     }
   }
@@ -69,7 +69,7 @@ public:
   void all_of_type(Fnc func, Args &&... args) const {
     validate<T>();
     for (const auto &obj : _objects) {
-      if (obj->type() == type_id<T>()) {
+      if (obj->get_type_info() == type_id<T>()) {
         func(static_cast<T *>(obj), std::forward<Args>(args)...);
       }
     }
@@ -79,7 +79,7 @@ public:
   void all_of_type(Fnc func, Args &&... args) {
     validate<T>();
     for (auto &obj : _objects) {
-      if (obj && obj->type() == type_id<T>()) {
+      if (obj && obj->get_type_info() == type_id<T>()) {
         func(static_cast<T *>(obj), std::forward<Args>(args)...);
       }
     }

@@ -23,18 +23,41 @@ private:
     virtual std::unique_ptr<Data> clone() const = 0;
   };
 
+  struct DataCtrl {
+    int refs;
+
+    DataCtrl() : refs(0) {}
+  };
+
   template<typename T>
   struct DataImpl : Data {
+    DataCtrl *_ctrl;
     T _data;
 
-    explicit DataImpl(T mdata) : _data(std::move(mdata)) {}
+    explicit DataImpl(T mdata)
+      : _data(std::move(mdata)),
+        _ctrl(new DataCtrl()) {
+      _ctrl->refs++;
+    }
 
-    ~DataImpl() override { delete _data; }
+    DataImpl(T mdata, DataCtrl *mctrl)
+      : _ctrl(mctrl),
+        _data(mdata) {
+      _ctrl->refs++;
+    }
+
+    ~DataImpl() override {
+      _ctrl->refs--;
+      if (_ctrl->refs <= 0) {
+        delete _ctrl;
+        delete _data;
+      }
+    }
 
     void *data() noexcept override { return _data; }
 
     std::unique_ptr<Data> clone() const override {
-      return std::make_unique<DataImpl<T>>(_data);
+      return std::make_unique<DataImpl<T>>(_data, _ctrl);
     }
 
     DataImpl &operator=(const DataImpl &) = delete;
@@ -46,34 +69,35 @@ private:
     constexpr static bool is_const() {
       return std::is_const<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::value;
     }
-/*
 
-    static std::unique_ptr<Data> get(BoxedValue::VoidType) {
+    //
+    //    static std::unique_ptr<Data> get(BoxedValue::VoidType) {}
+    //
+    //    template<typename T>
+    //    static std::unique_ptr<Data> get(std::unique_ptr<T> &&obj) {}
+    //
+    //    template<typename T>
+    //    static std::unique_ptr<Data> get(std::reference_wrapper<T> obj) {
+    //      auto p = &obj.get();
+    //      return std::make_unique<DataImpl<std::decay_t<decltype(p)>>>(std::forward<decltype(p)>(p));
+    //    }
+    //
+
+    template<typename T>
+    static std::unique_ptr<Data> get(T *t) {
+      return std::make_unique<DataImpl<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
     }
 
     template<typename T>
-    static std::unique_ptr<Data> get(T *t) { return get(std::ref(*t)); }
-
-    template<typename T>
-    static std::unique_ptr<Data> get(const T *t) { return get(std::cref(*t)); }
-
-    template<typename T>
-    static std::unique_ptr<Data> get(std::reference_wrapper<T> obj) {
-      auto p = &obj.get();
+    static std::unique_ptr<Data> get(const T *t) {
+      return std::make_unique<DataImpl<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
     }
-
-    template<typename T>
-    static std::unique_ptr<Data> get(std::unique_ptr<T> &&obj) {}
-*/
 
     template<typename T>
     static std::unique_ptr<Data> get(T t) {
       auto p = new T(std::move(t));
-      return std::make_unique<DataImpl<std::decay_t<decltype(p)>>>(std::forward<decltype(p)>(p));
+      return get(p);
     }
-
- /*   static std::unique_ptr<Data> get() {
-    }*/
   };
 
 public:
@@ -85,19 +109,31 @@ public:
       _data(DataBuilder::get(std::forward<T>(t))) {
   }
 
+  // Report as another type (for pointers)
+  template<typename T, typename = std::enable_if_t<!std::is_same_v<BoxedValue, std::decay_t<T>>>>
+  explicit BoxedValue(T &&t, TypeInfo type, bool t_return_value = false)
+    : _info(type),
+      _is_return(t_return_value),
+      _data(DataBuilder::get(std::forward<T>(t))) {
+  }
+
   // Unknown-type constructor
-  BoxedValue() : _info(TypeInfo()), _data(nullptr) {}
+  BoxedValue() : _info(TypeInfo()), _is_return(false), _data(nullptr) {}
 
   BoxedValue(BoxedValue &&other) = default;
 
   BoxedValue &operator=(BoxedValue &&rhs) = default;
 
-  BoxedValue(const BoxedValue &other) : _info(other._info), _data(other._data->clone()) {}
+  BoxedValue(const BoxedValue &other)
+    : _info(other._info),
+      _is_return(other._is_return),
+      _data(other._data->clone()) {}
 
   BoxedValue &operator=(const BoxedValue &rhs) {
     if (&rhs != this) {
       _data = rhs._data->clone();
       _info = rhs._info;
+      _is_return = rhs._is_return;
     }
     return *this;
   }
@@ -117,6 +153,10 @@ public:
     return _data->data();
   }
 
+  void *get_ptr() const noexcept {
+    return _data->data();
+  }
+
   template<typename ToType>
   ToType &cast() const {
     if (_data && user_type<ToType>() == _info) {
@@ -129,6 +169,15 @@ public:
   template<typename ToType>
   bool valid_cast() const {
     return (_data && user_type<ToType>() == _info);
+  }
+
+  template<typename VisitorType, typename Callable>
+  bool matches(Callable &&vis) const {
+    if (user_type<VisitorType>() == _info) {
+      vis(cast<VisitorType>());
+      return true;
+    }
+    return false;
   }
 
 private:

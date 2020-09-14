@@ -13,6 +13,16 @@ bool accepts_an_int(int i) {
 }
 }// namespace
 
+TEST_CASE("Type Info identifies pointers") {
+  int a = 0;
+  int *p = &a;
+
+  auto info = e00::impl::scripting::user_type(p);
+  if (!info.is_pointer()) {
+    FAIL();
+  }
+}
+
 TEST_CASE("Script System initializes") {
   auto script = e00::impl::ScriptEngine::Create();
 
@@ -62,3 +72,88 @@ TEST_CASE("Calling a const string lamda") {
   });
   script->parse("\nl(\"A string\")\n");
 }
+
+TEST_CASE("Gets native return value correctly") {
+  auto script = e00::impl::ScriptEngine::Create();
+  script->register_function("a", []() { return 3; });
+  script->register_function("b", [](int a) {
+    return a == 3;
+  });
+
+  script->parse("\nb(a())\n");
+}
+
+TEST_CASE("Multiple types of native methods can be called") {
+  auto script = e00::impl::ScriptEngine::Create();
+  int a = 0;
+  bool is_failed = false;
+  script->register_function("a", [&a]() { return a; });
+  script->register_function("b", [&a](int aa) { a = aa; });
+  script->register_function("VALIDATE", [&is_failed](bool a) { is_failed = !a; });
+
+  script->parse("\nb(4)\nVALIDATE(a() == 4)\n");
+
+  if (is_failed) {
+    FAIL();
+  }
+}
+
+TEST_CASE("Native calls a method in script and gets it's return value") {
+  auto script = e00::impl::ScriptEngine::Create();
+  script->parse("\nfunction test ()\n return \"Hello, World\"\nend\n");
+
+  auto hello_world = script->call<std::string>("test");
+  if (hello_world == "Hello, World") {
+    SUCCEED();
+  } else {
+    FAIL();
+  }
+}
+
+
+TEST_CASE("Register a variable") {
+  int a = 5;
+  auto script = e00::impl::ScriptEngine::Create();
+  script->register_variable("a", &a);
+}
+
+TEST_CASE("Pass a script function back to native and call it") {
+  auto script = e00::impl::ScriptEngine::Create();
+
+  e00::impl::scripting::BoxedValue val;
+
+  script->register_function("test", [&](e00::impl::scripting::ProxyFunction *proxy_function) {
+    val = proxy_function->operator()(2, 4);
+  });
+  script->parse("\nhalf = function(x)\nreturn x / 2\nend\n\ntest(half)\n");
+
+  if (val.is_arithmetic()) {
+
+  }
+}
+
+/*
+TEST_CASE("Can access structs value") {
+  struct test {
+    int a;
+    int b;
+  };
+  test t{};
+  t.a = 4;
+  t.b = 3;
+
+  bool is_failed = false;
+
+  auto script = e00::impl::ScriptEngine::Create();
+  script->register_function("VALIDATE", [&is_failed](bool a) { is_failed = !a; });
+  script->register_type<test>();
+  script->register_function("a", &test::a);
+  script->register_function("a", &test::b);
+  script->register_variable("test_a", &t);
+
+  script->parse("\nVALIDATE(test_a.a == 4)\n");
+  if (is_failed) {
+    FAIL();
+  }
+}
+*/

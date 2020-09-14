@@ -18,7 +18,7 @@ add_library(Engine01_ScriptSystem STATIC
         include/Engine/ScriptSystem/detail/NativeFunctionT.hpp
         include/Engine/ScriptSystem/detail/CallUtils.hpp
         include/Engine/ScriptSystem/detail/AttributeAccess.hpp
-        include/Engine/ScriptSystem/detail/CastHelpers.hpp)
+        include/Engine/ScriptSystem/detail/CastHelpers.hpp src/Lua/RefFunction.cpp src/Lua/RefFunction.hpp src/Lua/Lua.hpp src/Lua/TrampolineData.hpp src/Lua/LuaToNativeTrampoline.cpp src/Lua/LuaToNativeTrampoline.hpp src/Lua/LuaToBoxedConverter.cpp src/Lua/LuaToBoxedConverter.hpp src/Lua/BoxedToLuaConverter.cpp src/Lua/BoxedToLuaConverter.hpp src/Lua/NamedFunction.cpp src/Lua/NamedFunction.hpp)
 
 
 target_include_directories(Engine01_ScriptSystem PRIVATE src)

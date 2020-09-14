@@ -42,7 +42,7 @@ struct PackIndex {
 
     // We're looking for name AND type
     for (const auto &i : resource_index) {
-      if (i.name == resource_name && i.type == res_type) {
+      if (i.name == resource_name && i.get_type_info == res_type) {
         return i;
       }
     }

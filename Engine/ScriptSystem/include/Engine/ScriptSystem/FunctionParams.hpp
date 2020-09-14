@@ -22,11 +22,15 @@ struct FunctionParams {
     : m_begin(&vec.front()), m_end(&vec.front() + vec.size()) {
   }
 
-  FunctionParams() : m_begin(nullptr), m_end(nullptr) {}
+  constexpr FunctionParams() : m_begin(nullptr), m_end(nullptr) {}
 
   template<size_t Size>
   constexpr explicit FunctionParams(const std::array<BoxedValue, Size> &a)
-    : m_begin(std::begin(a)), m_end(std::end(a)) {
+    : m_begin(a.data()), m_end(a.data() + a.size()) {
+  }
+
+  constexpr explicit FunctionParams(const std::array<BoxedValue, 0> &)
+    : m_begin(nullptr), m_end(nullptr) {
   }
 
   [[nodiscard]] constexpr const BoxedValue &operator[](const std::size_t t_i) const noexcept {
@@ -58,7 +62,7 @@ struct FunctionParams {
   }
 
 private:
-  const BoxedValue *m_begin = nullptr;
-  const BoxedValue *m_end = nullptr;
+  const BoxedValue *m_begin;
+  const BoxedValue *m_end;
 };
-}// namespace e00::impl::scripting::detail
+}// namespace e00::impl::scripting
