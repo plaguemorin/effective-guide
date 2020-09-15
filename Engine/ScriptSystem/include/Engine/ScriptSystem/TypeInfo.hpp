@@ -22,18 +22,27 @@ namespace detail {
     return reinterpret_cast<type_id_no_rtti>(&uniqueT);
   }
 
+  template<typename T>
+  std::string_view make_name() {
+    return {};
+  }
+
   // Don't touch this!
   // clang-format off
   // @formatter:off
+#define MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE, NUMBER) \
+      template<> constexpr type_id_no_rtti make_type_id<TYPE>()                           { return (type_id_no_rtti)(NUMBER); } \
+      template<> constexpr std::string_view make_name<TYPE>()                             { return #TYPE; }
+
 #define MAKE_TYPE_ID_FOR_INTERNAL(TYPE, START_AT) \
-      template<> constexpr type_id_no_rtti make_type_id<TYPE>()                           { return (type_id_no_rtti)((START_AT) + 0); } \
-      template<> constexpr type_id_no_rtti make_type_id<const TYPE>()                     { return (type_id_no_rtti)((START_AT) + 1); } \
-      template<> constexpr type_id_no_rtti make_type_id<TYPE *>()                         { return (type_id_no_rtti)((START_AT) + 2); } \
-      template<> constexpr type_id_no_rtti make_type_id<const TYPE *>()                   { return (type_id_no_rtti)((START_AT) + 3); } \
-      template<> constexpr type_id_no_rtti make_type_id<TYPE &>()                         { return (type_id_no_rtti)((START_AT) + 4); } \
-      template<> constexpr type_id_no_rtti make_type_id<const TYPE &>()                   { return (type_id_no_rtti)((START_AT) + 5); } \
-      template<> constexpr type_id_no_rtti make_type_id<std::unique_ptr<TYPE>>()          { return (type_id_no_rtti)((START_AT) + 6); } \
-      template<> constexpr type_id_no_rtti make_type_id<const std::unique_ptr<TYPE> &>()  { return (type_id_no_rtti)((START_AT) + 7); }
+      MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE,                            (START_AT) + 0) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(const TYPE,                      (START_AT) + 1) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE *,                          (START_AT) + 2) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(const TYPE *,                    (START_AT) + 3) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE &,                          (START_AT) + 4) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(const TYPE &,                    (START_AT) + 5) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(std::unique_ptr<TYPE>,           (START_AT) + 6) \
+      MAKE_TYPE_INFO_FOR_INTERNAL2(const std::unique_ptr<TYPE> &,   (START_AT) + 7)
 
 #define MAKE_TYPE_ID_FOR(TYPE)  MAKE_TYPE_ID_FOR_INTERNAL(TYPE, __COUNTER__ * 8)
   // @formatter:on
@@ -84,17 +93,20 @@ struct TypeInfo {
   constexpr bool is_pointer() const noexcept { return (_flags & (1u << is_pointer_flag)) != 0; }
   constexpr bool is_class() const noexcept { return (_flags & (1u << is_class_flag)) != 0; }
 
-  constexpr bool operator==(const TypeInfo &rhs) const {
+  constexpr bool operator==(const TypeInfo &rhs) const noexcept {
     return _type == rhs._type;
   }
 
-  constexpr bool operator!=(const TypeInfo &rhs) const {
+  constexpr bool operator!=(const TypeInfo &rhs) const noexcept {
     return _type != rhs._type;
   }
 
-  constexpr bool bare_equal_type_info(const TypeInfo &ti) const {
+  constexpr bool bare_equal_type_info(const TypeInfo &ti) const noexcept {
     return _bare == ti._bare;
   }
+
+
+  constexpr std::string_view name() const noexcept { return _name; }
 
 private:
   constexpr static unsigned int is_const_flag = 0;
@@ -122,7 +134,7 @@ namespace detail {
         std::is_class<T>::value,
         detail::make_type_id<T>(),
         detail::make_type_id<typename detail::Bare_Type<T>::type>(),
-        {});
+        make_name<T>());
     }
   };
 

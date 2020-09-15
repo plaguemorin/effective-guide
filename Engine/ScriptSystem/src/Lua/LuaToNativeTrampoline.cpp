@@ -14,13 +14,9 @@ extern "C" int lua_trampoline(lua_State *L) {
   }
 
   auto args_count = lua_gettop(L);
-  //  std::cout << "Called "
-  //            << fn_name << ". has "
-  //            << fn->parameter_count() << " parameters. got "
-  //            << args_count << " from script";
 
   // Count arguments
-  if (!ctx->fn()->is_varargs() && args_count != ctx->fn()->parameter_count()) {
+  if (!ctx->fn()->is_varargs() && static_cast<size_t>(args_count) != ctx->fn()->parameter_count()) {
     return 0;
   }
 
