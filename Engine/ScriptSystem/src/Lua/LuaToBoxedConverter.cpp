@@ -12,7 +12,7 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
     case LUA_TNUMBER:
       if (info.is_arithmetic()) {
         // in lua this could be float, double, int, long...
-        if (info.is_compatible<float>()) {
+        if (info.bare_equal_type_info<float>()) {
           return BoxedValue(lua_tonumberx(L, n, nullptr));
         } else if (info.is_compatible<double>()) {
           return BoxedValue((double)lua_tonumberx(L, n, nullptr));
@@ -69,7 +69,7 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
 
     case LUA_TFUNCTION:
       // build a proxy function
-      return BoxedValue(new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)), user_type<ProxyFunction*>());
+      return BoxedValue(new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)), user_type<ProxyFunction *>());
 
     case LUA_TUSERDATA:
       break;
@@ -82,5 +82,53 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   }
 
   // Param has wrong value
+  return BoxedValue();
+}
+
+BoxedValue lua_to_boxed_value_guess(lua_State *L, int n) {
+  switch (lua_type(L, n)) {
+    case LUA_TNIL:
+      break;
+
+    case LUA_TNUMBER:
+      {
+        int isint = 0;
+        lua_Integer xi = lua_tointegerx(L, n, &isint);
+        if (isint) {
+          return BoxedValue(xi);
+        }
+
+        lua_Number xn = lua_tonumberx(L, n, nullptr);
+        return BoxedValue(xn);
+      }
+
+    case LUA_TBOOLEAN:
+      return BoxedValue(static_cast<bool>(lua_toboolean(L, n)));
+
+    case LUA_TSTRING:
+      {
+        size_t len;
+        const auto rawstr = lua_tolstring(L, n, &len);
+        return BoxedValue(std::string(rawstr, len));
+      }
+
+    case LUA_TTABLE:
+      // a lua map
+      break;
+
+    case LUA_TFUNCTION:
+      // build a proxy function
+      return BoxedValue(new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)), user_type<ProxyFunction *>());
+
+    case LUA_TUSERDATA:
+      break;
+
+    case LUA_TTHREAD:
+      break;
+
+    case LUA_TLIGHTUSERDATA:
+      break;
+  }
+
   return BoxedValue();
 }

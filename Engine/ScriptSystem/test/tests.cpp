@@ -123,13 +123,37 @@ TEST_CASE("Pass a script function back to native and call it") {
   e00::impl::scripting::BoxedValue val;
 
   script->register_function("test", [&](e00::impl::scripting::ProxyFunction *proxy_function) {
-    val = proxy_function->operator()(2, 4);
+    val = proxy_function->operator()(4);
   });
   script->parse("\nhalf = function(x)\nreturn x / 2\nend\n\ntest(half)\n");
 
   if (val.is_arithmetic()) {
-
+    SUCCEED();
+  } else {
+    FAIL();
   }
+}
+
+TEST_CASE("Native can return structs") {
+  auto script = e00::impl::ScriptEngine::Create();
+
+  struct Item {
+    int id;
+    std::string name;
+  };
+
+  script->register_function("make_item", []() {
+    return Item{1, {"Fred"}};
+  });
+
+  script->register_function("print_item_name", [](const Item& item) {
+    if (item.id == 1) {
+
+    }
+  });
+
+
+  script->parse("\nprint_item_name(make_item())\n");
 }
 
 /*

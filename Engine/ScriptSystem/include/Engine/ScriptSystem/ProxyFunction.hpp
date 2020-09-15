@@ -75,9 +75,7 @@ public:
       BoxedValue(std::forward<Args>(args))...,
     };
 
-    FunctionParams function_params(boxed_args);
-
-    return call(function_params);
+    return call(FunctionParams(boxed_args));
   }
 
   template<>

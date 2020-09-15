@@ -2,6 +2,7 @@
 #include "Lua/TrampolineData.hpp"
 #include "Lua/LuaToNativeTrampoline.hpp"
 #include "Lua/NamedFunction.hpp"
+#include "Lua/RefFunction.hpp"
 
 #include <iostream>
 
@@ -57,7 +58,19 @@ std::error_code LuaScriptEngine::parse(const std::string &code) {
   return {};
 }
 std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const std::string &fn_name, scripting::TypeInfo preferred_return_type) {
+  // Get a global of the function name
+  lua_getglobal(_state, fn_name.c_str());
+
+  // This should already be true, but we never know if something went sideways at runtime
+  if (!lua_isfunction(_state, -1)) {
+    return nullptr;
+  }
+
+  // take a ref to it
   return std::unique_ptr<scripting::ProxyFunction>(
-    new NamedFunction(_state, fn_name, preferred_return_type));
+    new RefFunction(fn_name, _state, luaL_ref(_state, LUA_REGISTRYINDEX), preferred_return_type));
+
+  //  return std::unique_ptr<scripting::ProxyFunction>(
+  //    new NamedFunction(_state, fn_name, preferred_return_type));
 }
 }// namespace e00::impl::scripting::lua

@@ -1,15 +1,12 @@
 #pragma once
 
 #include <string>
-#include <Engine/ScriptSystem/ProxyFunction.hpp>
 
+#include "LuaProxyFunction.hpp"
 #include "Lua.hpp"
 
 namespace e00::impl::scripting::lua {
-
-class NamedFunction final : public ProxyFunction {
-  const std::string _fn_name;
-  lua_State *_state;
+class NamedFunction final : public LuaProxyFunction {
 
 protected:
   BoxedValue do_call(const FunctionParams &params) const override;
