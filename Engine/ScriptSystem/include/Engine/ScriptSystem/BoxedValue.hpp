@@ -35,8 +35,8 @@ private:
     T _data;
 
     explicit DataImpl(T mdata)
-      : _data(std::move(mdata)),
-        _ctrl(new DataCtrl()) {
+      : _ctrl(new DataCtrl()),
+        _data(std::move(mdata)) {
       _ctrl->refs++;
     }
 
@@ -118,7 +118,7 @@ public:
   }
 
   // Unknown-type constructor
-  BoxedValue() : _info(TypeInfo()), _is_return(false), _data(nullptr) {}
+  BoxedValue() : _info(TypeInfo()), _is_return(false), _data() {}
 
   BoxedValue(BoxedValue &&other) = default;
 
@@ -149,26 +149,44 @@ public:
   bool is_undef() const noexcept { return _info.is_undef(); }
   bool is_pointer() const noexcept { return _info.is_pointer(); }
 
-  const void *get_const_ptr() const noexcept {
-    return _data->data();
-  }
-
-  void *get_ptr() const noexcept {
-    return _data->data();
-  }
+  const void *get_const_ptr() const noexcept { return _data->data(); }
+  void *get_ptr() const noexcept { return _data->data(); }
 
   template<typename ToType>
   ToType &cast() const {
     if (_data && user_type<ToType>() == _info) {
       return *static_cast<ToType *>(_data->data());
-    } else {
-      throw std::bad_cast();
     }
+
+    // Doesn't match
+    abort();
+  }
+
+
+  template<typename ToType>
+  bool cast(ToType &out) {
+    if (_data && user_type<ToType>() == _info) {
+      out = *static_cast<ToType *>(_data->data());
+      return true;
+    }
+    return false;
+  }
+
+  template<typename ToType>
+  bool cast(ToType *&out) {
+    if (user_type<ToType>() == _info) {
+      if (_data)
+        out = static_cast<ToType *>(_data->data());
+      else
+        out = nullptr;
+      return true;
+    }
+    return false;
   }
 
   template<typename ToType>
   bool valid_cast() const {
-    return (_data && user_type<ToType>() == _info);
+    return (_data && (user_type<ToType>() == _info || user_type<ToType *>() == _info));
   }
 
   template<typename VisitorType, typename Callable>

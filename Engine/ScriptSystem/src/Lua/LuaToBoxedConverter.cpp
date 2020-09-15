@@ -2,6 +2,56 @@
 #include "RefFunction.hpp"
 
 using namespace e00::impl::scripting;
+
+namespace {
+BoxedValue IntegerToX(BoxedValue &&original, const TypeInfo &target) {
+  lua_Integer original_value = original.cast<lua_Integer>();
+  if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<long>()) return BoxedValue((long)original_value);
+  if (target == user_type<float>()) return BoxedValue((float)original_value);
+  if (target == user_type<double>()) return BoxedValue((double)original_value);
+  if (target == user_type<std::string>()) return BoxedValue(std::to_string(original_value));
+  return std::move(original);
+}
+
+BoxedValue FloatingToX(BoxedValue &&original, const TypeInfo &target) {
+  lua_Number original_value = original.cast<lua_Number>();
+  if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<long>()) return BoxedValue((long)original_value);
+  if (target == user_type<float>()) return BoxedValue((float)original_value);
+  if (target == user_type<double>()) return BoxedValue((double)original_value);
+  if (target == user_type<std::string>()) return BoxedValue(std::to_string(original_value));
+  return std::move(original);
+}
+
+BoxedValue StringToX(BoxedValue &&original, const TypeInfo &target) {
+  std::string original_value = original.cast<std::string>();
+  (void)target;
+  return std::move(original);
+}
+
+BoxedValue BoolToX(BoxedValue &&original, const TypeInfo &target) {
+  bool original_value = original.cast<bool>();
+  if (target == user_type<std::string>()) return BoxedValue(std::string(original_value ? "true" : "false"));
+  if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<long>()) return BoxedValue((long)original_value);
+  return std::move(original);
+}
+
+BoxedValue NullToX(BoxedValue &&original, const TypeInfo &target) {
+  if (target.is_pointer()) return BoxedValue(nullptr, target);
+  if (target == user_type<int>()) return BoxedValue((int)0);
+  if (target == user_type<long>()) return BoxedValue(0l);
+  if (target == user_type<char>()) return BoxedValue((char)0);
+  if (target == user_type<float>()) return BoxedValue(0.f);
+  if (target == user_type<double>()) return BoxedValue((double)0.);
+  return std::move(original);
+}
+}// namespace
+
 BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   auto guessed = lua_to_boxed_value_guess(L, n);
 
@@ -11,6 +61,17 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   }
 
   // We need to do some conversion
+  if (guessed.get_type_info() == user_type<lua_Integer>()) {
+    return IntegerToX(std::move(guessed), info);
+  } else if (guessed.get_type_info() == user_type<lua_Number>()) {
+    return FloatingToX(std::move(guessed), info);
+  } else if (guessed.get_type_info() == user_type<std::string>()) {
+    return StringToX(std::move(guessed), info);
+  } else if (guessed.get_type_info() == user_type<bool>()) {
+    return BoolToX(std::move(guessed), info);
+  } else if (guessed.get_type_info() == user_type<nullptr_t>()) {
+    return NullToX(std::move(guessed), info);
+  }
 
   // We found nothing :(
   return BoxedValue();
@@ -19,7 +80,7 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
 BoxedValue lua_to_boxed_value_guess(lua_State *L, int n) {
   switch (lua_type(L, n)) {
     case LUA_TNIL:
-      break;
+      return BoxedValue(nullptr);
 
     case LUA_TNUMBER:
       {
@@ -49,7 +110,7 @@ BoxedValue lua_to_boxed_value_guess(lua_State *L, int n) {
 
     case LUA_TFUNCTION:
       // build a proxy function
-      return BoxedValue(new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)), user_type<ProxyFunction *>());
+      return BoxedValue((ProxyFunction *)new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)));
 
     case LUA_TUSERDATA:
       break;
