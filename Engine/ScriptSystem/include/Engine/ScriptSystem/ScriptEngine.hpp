@@ -9,6 +9,7 @@
 #include <map>
 
 #include "detail/NativeFunctionT.hpp"
+#include "BoxedCast.hpp"
 
 namespace e00::impl {
 class ScriptEngine {
@@ -54,10 +55,7 @@ public:
       if constexpr (std::is_void<Ret>::value) {
         return;
       } else {
-        if (ret.template valid_cast<Ret>()) {
-          return ret.template cast<Ret>();
-        }
-        // bad cast
+        return scripting::cast<Ret>(ret);
       }
     }
 

@@ -57,14 +57,6 @@ TEST_CASE("Calling an int lamda") {
   script->parse("\nl(4)\n");
 }
 
-TEST_CASE("Calling a string_view lamda") {
-  auto script = e00::impl::ScriptEngine::Create();
-  script->register_function("l", [](std::string_view a) {
-    return a.size();
-  });
-  script->parse("\nl(\"A string\")\n");
-}
-
 TEST_CASE("Calling a const string lamda") {
   auto script = e00::impl::ScriptEngine::Create();
   script->register_function("l", [](const std::string &a) {
@@ -110,25 +102,34 @@ TEST_CASE("Native calls a method in script and gets it's return value") {
   }
 }
 
-
-TEST_CASE("Register a variable") {
-  int a = 5;
-  auto script = e00::impl::ScriptEngine::Create();
-  script->register_variable("a", &a);
-}
+// TODO
+//TEST_CASE("Register a variable") {
+//  int a = 5;
+//  auto script = e00::impl::ScriptEngine::Create();
+//  script->register_variable("a", &a);
+//}
 
 TEST_CASE("Pass a script function back to native and call it") {
   auto script = e00::impl::ScriptEngine::Create();
 
   e00::impl::scripting::BoxedValue val;
 
-  script->register_function("test", [&](e00::impl::scripting::ProxyFunction *proxy_function) {
-    val = proxy_function->operator()(4);
+  script->register_function("test", [&val](e00::impl::scripting::ProxyFunction *proxy_function) {
+    val = proxy_function->operator()(6);
   });
   script->parse("\nhalf = function(x)\nreturn x / 2\nend\n\ntest(half)\n");
 
   if (val.is_arithmetic()) {
-    SUCCEED();
+    int result = 0;
+    e00::impl::scripting::try_cast<int>(val, [&result](int a) {
+      result = a;
+    });
+
+    if (result == 2) {
+      SUCCEED();
+    } else {
+      FAIL();
+    }
   } else {
     FAIL();
   }
@@ -142,18 +143,21 @@ TEST_CASE("Native can return structs") {
     std::string name;
   };
 
+  bool is_ok = false;
+
   script->register_function("make_item", []() {
-    return Item{1, {"Fred"}};
+    return Item{ 1, { "Fred" } };
   });
 
-  script->register_function("print_item_name", [](const Item& item) {
-    if (item.id == 1) {
-
-    }
+  script->register_function("print_item_name", [&is_ok](const Item &item) {
+    is_ok = (item.id == 1);
   });
-
 
   script->parse("\nprint_item_name(make_item())\n");
+
+  if (!is_ok) {
+    FAIL();
+  }
 }
 
 /*

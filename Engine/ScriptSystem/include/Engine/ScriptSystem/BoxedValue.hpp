@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "TypeInfo.hpp"
+#include "detail/FunctionSignature.hpp"
 
 namespace e00::impl::scripting {
 /**
@@ -16,53 +17,67 @@ public:
 
 private:
   struct Data {
+  protected:
     Data() = default;
+
+  public:
     Data &operator=(const Data &) = delete;
     virtual ~Data() noexcept = default;
     virtual void *data() noexcept = 0;
-    virtual std::unique_ptr<Data> clone() const = 0;
+    [[nodiscard]] virtual std::unique_ptr<Data> clone() const = 0;
   };
 
   struct DataCtrl {
     int refs;
-
     DataCtrl() : refs(0) {}
   };
 
   template<typename T>
-  struct DataImpl : Data {
+  struct DataImplOwned : Data {
     DataCtrl *_ctrl;
     T _data;
 
-    explicit DataImpl(T mdata)
+    explicit DataImplOwned(T mdata)
       : _ctrl(new DataCtrl()),
         _data(std::move(mdata)) {
       _ctrl->refs++;
     }
 
-    DataImpl(T mdata, DataCtrl *mctrl)
+    DataImplOwned(T mdata, DataCtrl *mctrl)
       : _ctrl(mctrl),
         _data(mdata) {
       _ctrl->refs++;
     }
 
-    ~DataImpl() override {
+    ~DataImplOwned() override {
       _ctrl->refs--;
       if (_ctrl->refs <= 0) {
         delete _ctrl;
         delete _data;
       }
+      _ctrl = nullptr;
+      _data = nullptr;
     }
 
     void *data() noexcept override { return _data; }
-
-    std::unique_ptr<Data> clone() const override {
-      return std::make_unique<DataImpl<T>>(_data, _ctrl);
+    [[nodiscard]] std::unique_ptr<Data> clone() const override {
+      return std::make_unique<DataImplOwned<T>>(_data, _ctrl);
     }
-
-    DataImpl &operator=(const DataImpl &) = delete;
+    DataImplOwned &operator=(const DataImplOwned &) = delete;
   };
 
+  template<typename T>
+  struct DataImplPtr : Data {
+    T _data;
+
+    explicit DataImplPtr(T mdata) : _data(std::move(mdata)) {}
+    ~DataImplPtr() override {}
+    void *data() noexcept override { return _data; }
+    [[nodiscard]] std::unique_ptr<Data> clone() const override {
+      return std::make_unique<DataImplPtr<T>>(_data);
+    }
+    DataImplPtr &operator=(const DataImplPtr &) = delete;
+  };
 
   struct DataBuilder {
     template<typename T>
@@ -70,33 +85,20 @@ private:
       return std::is_const<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::value;
     }
 
-    //
-    //    static std::unique_ptr<Data> get(BoxedValue::VoidType) {}
-    //
-    //    template<typename T>
-    //    static std::unique_ptr<Data> get(std::unique_ptr<T> &&obj) {}
-    //
-    //    template<typename T>
-    //    static std::unique_ptr<Data> get(std::reference_wrapper<T> obj) {
-    //      auto p = &obj.get();
-    //      return std::make_unique<DataImpl<std::decay_t<decltype(p)>>>(std::forward<decltype(p)>(p));
-    //    }
-    //
-
     template<typename T>
     static std::unique_ptr<Data> get(T *t) {
-      return std::make_unique<DataImpl<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
+      return std::make_unique<DataImplPtr<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
     }
 
     template<typename T>
     static std::unique_ptr<Data> get(const T *t) {
-      return std::make_unique<DataImpl<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
+      return std::make_unique<DataImplPtr<std::decay_t<decltype(t)>>>(std::forward<decltype(t)>(t));
     }
 
     template<typename T>
     static std::unique_ptr<Data> get(T t) {
       auto p = new T(std::move(t));
-      return get(p);
+      return std::make_unique<DataImplOwned<std::decay_t<decltype(p)>>>(std::forward<decltype(p)>(p));
     }
   };
 
@@ -148,55 +150,10 @@ public:
   bool is_arithmetic() const noexcept { return _info.is_arithmetic(); }
   bool is_undef() const noexcept { return _info.is_undef(); }
   bool is_pointer() const noexcept { return _info.is_pointer(); }
+  bool is_class() const noexcept { return _info.is_class(); }
 
   const void *get_const_ptr() const noexcept { return _data->data(); }
   void *get_ptr() const noexcept { return _data->data(); }
-
-  template<typename ToType>
-  ToType &cast() const {
-    if (_data && user_type<ToType>() == _info) {
-      return *static_cast<ToType *>(_data->data());
-    }
-
-    // Doesn't match
-    abort();
-  }
-
-
-  template<typename ToType>
-  bool cast(ToType &out) {
-    if (_data && user_type<ToType>() == _info) {
-      out = *static_cast<ToType *>(_data->data());
-      return true;
-    }
-    return false;
-  }
-
-  template<typename ToType>
-  bool cast(ToType *&out) {
-    if (user_type<ToType>() == _info) {
-      if (_data)
-        out = static_cast<ToType *>(_data->data());
-      else
-        out = nullptr;
-      return true;
-    }
-    return false;
-  }
-
-  template<typename ToType>
-  bool valid_cast() const {
-    return (_data && (user_type<ToType>() == _info || user_type<ToType *>() == _info));
-  }
-
-  template<typename VisitorType, typename Callable>
-  bool matches(Callable &&vis) const {
-    if (user_type<VisitorType>() == _info) {
-      vis(cast<VisitorType>());
-      return true;
-    }
-    return false;
-  }
 
 private:
   TypeInfo _info;

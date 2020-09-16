@@ -23,16 +23,14 @@ namespace detail {
   }
 
   template<typename T>
-  const char* make_name() {
-    return {};
-  }
+  const char *make_name() { return {}; }
 
   // Don't touch this!
   // clang-format off
   // @formatter:off
 #define MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE, NUMBER) \
-      template<> constexpr type_id_no_rtti make_type_id<TYPE>()                           { return (type_id_no_rtti)(NUMBER); } \
-      template<> constexpr const char* make_name<TYPE>()                             { return #TYPE; }
+      template<> constexpr type_id_no_rtti make_type_id<TYPE>() { return (type_id_no_rtti)(NUMBER); } \
+      template<> constexpr const char* make_name<TYPE>()        { return #TYPE; }
 
 #define MAKE_TYPE_ID_FOR_INTERNAL(TYPE, START_AT) \
       MAKE_TYPE_INFO_FOR_INTERNAL2(TYPE,                            (START_AT) + 0) \
@@ -68,10 +66,13 @@ namespace detail {
 #undef MAKE_TYPE_ID_FOR_INTERNAL
 }// namespace detail
 
+/**
+ * Run-time information about a type
+ */
 struct TypeInfo {
   constexpr TypeInfo() = default;
 
-  constexpr TypeInfo(const bool t_is_const, const bool t_is_reference, const bool t_is_pointer, const bool t_is_void, const bool t_is_arithmetic, const bool t_is_class, type_id_no_rtti t_type, type_id_no_rtti t_bare, const char* t_name) noexcept
+  constexpr TypeInfo(const bool t_is_const, const bool t_is_reference, const bool t_is_pointer, const bool t_is_void, const bool t_is_arithmetic, const bool t_is_class, type_id_no_rtti t_type, type_id_no_rtti t_bare, const char *t_name) noexcept
     : _flags((static_cast<unsigned int>(t_is_const) << is_const_flag)
              + (static_cast<unsigned int>(t_is_reference) << is_reference_flag)
              + (static_cast<unsigned int>(t_is_pointer) << is_pointer_flag)
@@ -119,7 +120,7 @@ private:
   unsigned int _flags = (1u << is_undef_flag);
   type_id_no_rtti _type = {};
   type_id_no_rtti _bare = {};
-  const char* _name = {};
+  const char *_name = {};
 };
 
 namespace detail {

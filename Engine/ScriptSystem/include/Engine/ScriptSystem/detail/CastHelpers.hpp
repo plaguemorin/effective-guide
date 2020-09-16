@@ -9,10 +9,10 @@ namespace e00::impl::scripting::detail {
 
 template<typename T>
 constexpr T *throw_if_null(T *t) {
-  if (t) {
+//  if (t) {
     return t;
-  }
-  throw std::runtime_error("Attempted to dereference null BoxedValue");
+//  }
+//  throw std::runtime_error("Attempted to dereference null BoxedValue");
 }
 
 template<typename T>

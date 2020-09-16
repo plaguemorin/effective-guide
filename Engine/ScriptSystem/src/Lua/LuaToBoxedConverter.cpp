@@ -1,14 +1,19 @@
 #include "LuaToBoxedConverter.hpp"
 #include "RefFunction.hpp"
 
+#include <Engine/ScriptSystem/BoxedCast.hpp>
+
 using namespace e00::impl::scripting;
 
 namespace {
 BoxedValue IntegerToX(BoxedValue &&original, const TypeInfo &target) {
-  lua_Integer original_value = original.cast<lua_Integer>();
+  auto original_value = cast<lua_Integer>(original);
   if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<unsigned char>()) return BoxedValue((unsigned char)original_value);
   if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<unsigned int>()) return BoxedValue((unsigned int)original_value);
   if (target == user_type<long>()) return BoxedValue((long)original_value);
+  if (target == user_type<unsigned long>()) return BoxedValue((unsigned long)original_value);
   if (target == user_type<float>()) return BoxedValue((float)original_value);
   if (target == user_type<double>()) return BoxedValue((double)original_value);
   if (target == user_type<std::string>()) return BoxedValue(std::to_string(original_value));
@@ -16,10 +21,13 @@ BoxedValue IntegerToX(BoxedValue &&original, const TypeInfo &target) {
 }
 
 BoxedValue FloatingToX(BoxedValue &&original, const TypeInfo &target) {
-  lua_Number original_value = original.cast<lua_Number>();
+  auto original_value = cast<lua_Number>(original);
   if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<unsigned char>()) return BoxedValue((unsigned char)original_value);
   if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<unsigned int>()) return BoxedValue((unsigned int)original_value);
   if (target == user_type<long>()) return BoxedValue((long)original_value);
+  if (target == user_type<unsigned long>()) return BoxedValue((unsigned long)original_value);
   if (target == user_type<float>()) return BoxedValue((float)original_value);
   if (target == user_type<double>()) return BoxedValue((double)original_value);
   if (target == user_type<std::string>()) return BoxedValue(std::to_string(original_value));
@@ -27,17 +35,20 @@ BoxedValue FloatingToX(BoxedValue &&original, const TypeInfo &target) {
 }
 
 BoxedValue StringToX(BoxedValue &&original, const TypeInfo &target) {
-  std::string original_value = original.cast<std::string>();
+  auto original_value = cast<std::string>(original);
   (void)target;
   return std::move(original);
 }
 
 BoxedValue BoolToX(BoxedValue &&original, const TypeInfo &target) {
-  bool original_value = original.cast<bool>();
-  if (target == user_type<std::string>()) return BoxedValue(std::string(original_value ? "true" : "false"));
+  bool original_value = cast<bool>(original);
   if (target == user_type<char>()) return BoxedValue((char)original_value);
+  if (target == user_type<unsigned char>()) return BoxedValue((unsigned char)original_value);
   if (target == user_type<int>()) return BoxedValue((int)original_value);
+  if (target == user_type<unsigned int>()) return BoxedValue((unsigned int)original_value);
   if (target == user_type<long>()) return BoxedValue((long)original_value);
+  if (target == user_type<unsigned long>()) return BoxedValue((unsigned long)original_value);
+  if (target == user_type<std::string>()) return BoxedValue(std::string(original_value ? "true" : "false"));
   return std::move(original);
 }
 
@@ -56,7 +67,7 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   auto guessed = lua_to_boxed_value_guess(L, n);
 
   // Shortcut if it's the right type
-  if (guessed.get_type_info() == info) {
+  if (guessed.get_type_info() == info || guessed.get_type_info().bare_equal_type_info(info)) {
     return guessed;
   }
 
