@@ -34,7 +34,7 @@ add_library(Engine01_ScriptSystem STATIC
         src/Lua/NamedFunction.hpp
         src/Lua/LuaProxyFunction.cpp
         src/Lua/LuaProxyFunction.hpp
-        )
+        src/Lua/UserDataHolder.cpp src/Lua/UserDataHolder.hpp)
 
 
 target_include_directories(Engine01_ScriptSystem PRIVATE src)

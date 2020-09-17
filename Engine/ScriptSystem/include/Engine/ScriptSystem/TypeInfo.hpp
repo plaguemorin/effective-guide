@@ -23,7 +23,14 @@ namespace detail {
   }
 
   template<typename T>
-  const char *make_name() { return {}; }
+  constexpr const char *make_name() {
+#if 0
+    auto t = &typeid(T);
+    return t->name();
+#else
+    return {};
+#endif
+  }
 
   // Don't touch this!
   // clang-format off
@@ -62,6 +69,13 @@ namespace detail {
   MAKE_TYPE_ID_FOR(std::string_view)
   MAKE_TYPE_ID_FOR(ProxyFunction)
 
+  // Special case: void (you cannot reference void)
+  MAKE_TYPE_INFO_FOR_INTERNAL2(void, 1000)
+  MAKE_TYPE_INFO_FOR_INTERNAL2(void *, 1001)
+  MAKE_TYPE_INFO_FOR_INTERNAL2(const void *, 1002)
+  MAKE_TYPE_INFO_FOR_INTERNAL2(std::unique_ptr<void>, 1003)
+  MAKE_TYPE_INFO_FOR_INTERNAL2(const std::unique_ptr<void> &, 1004)
+
 #undef MAKE_TYPE_ID_FOR
 #undef MAKE_TYPE_ID_FOR_INTERNAL
 }// namespace detail
@@ -81,7 +95,7 @@ struct TypeInfo {
              + (static_cast<unsigned int>(t_is_class) << is_class_flag)),
       _type(t_type),
       _bare(t_bare),
-      _name(t_name) {
+      _name(t_name ? t_name : "") {
   }
 
   constexpr TypeInfo(const TypeInfo &rhs) noexcept = default;
@@ -106,6 +120,7 @@ struct TypeInfo {
     return _bare == ti._bare;
   }
 
+  constexpr type_id_no_rtti id() const noexcept { return _type; }
 
   constexpr std::string_view name() const noexcept { return _name; }
 

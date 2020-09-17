@@ -146,7 +146,7 @@ TEST_CASE("Native can return structs") {
   bool is_ok = false;
 
   script->register_function("make_item", []() {
-    return Item{ 1, { "Fred" } };
+    return Item{ 1,  "Fred" };
   });
 
   script->register_function("print_item_name", [&is_ok](const Item &item) {

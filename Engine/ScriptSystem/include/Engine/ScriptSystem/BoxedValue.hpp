@@ -152,8 +152,8 @@ public:
   bool is_pointer() const noexcept { return _info.is_pointer(); }
   bool is_class() const noexcept { return _info.is_class(); }
 
-  const void *get_const_ptr() const noexcept { return _data->data(); }
-  void *get_ptr() const noexcept { return _data->data(); }
+  const void *get_const_ptr() const noexcept { return (_data) ? _data->data() : nullptr; }
+  void *get_ptr() const noexcept { return (_data) ? _data->data() : nullptr; }
 
 private:
   TypeInfo _info;

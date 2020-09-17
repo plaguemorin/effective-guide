@@ -22,6 +22,8 @@ protected:
 
   virtual void add_variable(const std::string &var_name, scripting::BoxedValue val) = 0;
 
+  virtual void add_type(const scripting::TypeInfo &type) = 0;
+
 public:
   static std::unique_ptr<ScriptEngine> Create();
 
@@ -31,17 +33,24 @@ public:
 
   template<typename Type>
   void register_type() {
+    add_type(scripting::user_type<Type>());
   }
 
   template<typename Fn>
   void register_function(const std::string &fn_name, Fn &&fn) {
     if (valid_fn_name(fn_name)) {
-      add_function(fn_name, scripting::detail::make_function_t(fn, scripting::detail::FunctionSignature{ fn }));
+      auto function_t = scripting::detail::make_function_t(fn, scripting::detail::FunctionSignature{ fn });
+      for (const auto &i : function_t->parameters()) {
+        add_type(i);
+      }
+      add_type(function_t->return_type());
+      add_function(fn_name, std::move(function_t));
     }
   }
 
   template<typename VarType>
   void register_variable(const std::string &var_name, VarType var) {
+    register_type<VarType>();
     add_variable(var_name, scripting::BoxedValue(std::forward<VarType>(var)));
   }
 

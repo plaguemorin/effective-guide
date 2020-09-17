@@ -93,6 +93,11 @@ struct Cast_Helper_Inner<const Result *const &> : public Cast_Helper_Inner<const
 template<typename Result>
 struct Cast_Helper_Inner<const Result &> {
   static const Result &cast(const BoxedValue &ob) {
+    // Is it the right base type ?
+    if (ob.get_type_info().bare_equal_type_info(user_type<Result>())) {
+
+    }
+
     return *static_cast<const Result *>(verify_type(ob, user_type<Result>(), ob.get_const_ptr()));
   }
 };

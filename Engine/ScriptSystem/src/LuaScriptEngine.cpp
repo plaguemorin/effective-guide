@@ -3,6 +3,7 @@
 #include "Lua/LuaToNativeTrampoline.hpp"
 #include "Lua/NamedFunction.hpp"
 #include "Lua/RefFunction.hpp"
+#include "Lua/UserDataHolder.hpp"
 
 #include <iostream>
 
@@ -11,6 +12,14 @@ LuaScriptEngine::LuaScriptEngine()
   : ScriptEngine(),
     _state(luaL_newstate()) {
   luaL_openlibs(_state);
+
+  // Make our genetic metatable for userdata
+  luaL_newmetatable(_state, UserDataHolder::MetaTableName);
+  lua_pushcfunction(_state, UserDataHolder::LuaGc);
+  lua_setfield(_state, -2, "__gc");
+  lua_pushvalue(_state, -1);
+  lua_setfield(_state, -2, "__index");
+  lua_pop(_state, 1);
 }
 
 LuaScriptEngine::~LuaScriptEngine() {
@@ -51,6 +60,14 @@ void LuaScriptEngine::add_variable(const std::string &var_name, scripting::Boxed
   }*/
 }
 
+void LuaScriptEngine::add_type(const TypeInfo &type) {
+  if (!type.is_class()) {
+    return;
+  }
+
+  std::cerr << "Adding type " << type.name() << ", " << type.id() << "\n";
+}
+
 std::error_code LuaScriptEngine::parse(const std::string &code) {
   luaL_loadstring(_state, code.c_str());
   lua_pcall(_state, 0, 0, 0);
@@ -69,8 +86,5 @@ std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const st
   // take a ref to it
   return std::unique_ptr<scripting::ProxyFunction>(
     new RefFunction(fn_name, _state, luaL_ref(_state, LUA_REGISTRYINDEX), preferred_return_type));
-
-  //  return std::unique_ptr<scripting::ProxyFunction>(
-  //    new NamedFunction(_state, fn_name, preferred_return_type));
 }
 }// namespace e00::impl::scripting::lua

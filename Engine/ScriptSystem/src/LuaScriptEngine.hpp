@@ -29,6 +29,7 @@ protected:
   bool valid_fn_name(const std::string &fn_name) override;
   void add_function(const std::string &fn_name, std::unique_ptr<scripting::ProxyFunction> &&fn) override;
   void add_variable(const std::string &var_name, scripting::BoxedValue val) override;
+  void add_type(const TypeInfo &type) override;
 
 public:
   std::error_code parse(const std::string &code) override;

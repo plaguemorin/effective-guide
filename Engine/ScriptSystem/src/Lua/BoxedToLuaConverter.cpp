@@ -1,4 +1,5 @@
 #include "BoxedToLuaConverter.hpp"
+#include "UserDataHolder.hpp"
 #include <Engine/ScriptSystem/BoxedCast.hpp>
 
 #include <string>
@@ -21,6 +22,14 @@ int boxed_to_lua(lua_State *L, const BoxedValue &boxed_rv) {
 
   if (!matched) {
     if (boxed_rv.is_class()) {
+      // We need to send a class-like thing to Lua, we'll put it as user data
+      auto **pudh = (lua::UserDataHolder **)lua_newuserdata(L, sizeof(lua::UserDataHolder *));
+      if (!pudh) return 0;
+
+      *pudh = new lua::UserDataHolder(boxed_rv);
+      luaL_setmetatable(L, lua::UserDataHolder::MetaTableName);
+
+      matched = true;
     }
   }
 

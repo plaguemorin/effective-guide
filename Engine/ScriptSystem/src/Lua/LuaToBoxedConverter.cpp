@@ -1,7 +1,9 @@
 #include "LuaToBoxedConverter.hpp"
 #include "RefFunction.hpp"
+#include "UserDataHolder.hpp"
 
 #include <Engine/ScriptSystem/BoxedCast.hpp>
+
 
 using namespace e00::impl::scripting;
 
@@ -85,7 +87,7 @@ BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   }
 
   // We found nothing :(
-  return BoxedValue();
+  return guessed;
 }
 
 BoxedValue lua_to_boxed_value_guess(lua_State *L, int n) {
@@ -124,6 +126,12 @@ BoxedValue lua_to_boxed_value_guess(lua_State *L, int n) {
       return BoxedValue((ProxyFunction *)new lua::RefFunction(L, luaL_ref(L, LUA_REGISTRYINDEX)));
 
     case LUA_TUSERDATA:
+      {
+        auto **data = static_cast<lua::UserDataHolder **>(luaL_checkudata(L, n, lua::UserDataHolder::MetaTableName));
+        if (data && *data && (*data)->valid()) {
+          return (*data)->BoxedData();
+        }
+      }
       break;
 
     case LUA_TTHREAD:

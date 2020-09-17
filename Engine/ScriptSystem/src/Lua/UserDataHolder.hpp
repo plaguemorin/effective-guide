@@ -1,0 +1,34 @@
+#pragma once
+
+#include <cstdint>
+#include <Engine/ScriptSystem/BoxedValue.hpp>
+
+#include "Lua.hpp"
+
+namespace e00::impl::scripting::lua {
+
+class UserDataHolder {
+  constexpr static uint32_t MAGIC = 0xADC0DEAD;
+
+  uint32_t _magic;// < LEAVE THIS AS THE FIRST ELEMENT
+  BoxedValue _value;
+
+public:
+  constexpr static const char *MetaTableName = "SE_UserDataHolder";
+
+  static int LuaGc(lua_State *);
+
+  UserDataHolder();
+
+  UserDataHolder(BoxedValue &&value);
+
+  UserDataHolder(BoxedValue value);
+
+  ~UserDataHolder() = default;
+
+  [[nodiscard]] bool valid() const noexcept { return _magic == MAGIC; }
+
+  [[nodiscard]] BoxedValue BoxedData() const { return _value; }
+};
+
+}// namespace e00::impl::scripting::lua

@@ -20,7 +20,7 @@ struct Handle_Return {
   template<typename T,
     typename = std::enable_if_t<!std::is_pod_v<std::decay_t<T>>>>
   static BoxedValue handle(T &&r) {
-    return BoxedValue(std::make_shared<T>(std::forward<T>(r)), true);
+    return BoxedValue(std::forward<T>(r), true);
   }
 };
 

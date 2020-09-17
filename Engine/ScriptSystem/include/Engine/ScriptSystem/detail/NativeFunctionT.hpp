@@ -47,7 +47,7 @@ private:
 };
 
 template<typename Func, bool Is_Noexcept, bool Is_Member, bool Is_MemberObject, bool Is_Object, typename Ret, typename... Param>
-auto make_callable_impl(Func &&func, FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, Is_Member, Is_MemberObject, Is_Object>) {
+std::unique_ptr<ProxyFunction> make_callable_impl(Func &&func, FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, Is_Member, Is_MemberObject, Is_Object>) {
   if constexpr (Is_MemberObject) {
     // we now that the Param pack will have only one element, so we are safe expanding it here
     return make_unique_base<ProxyFunction, Attribute_Access<Ret, std::decay_t<Param>...>>(std::forward<Func>(func));
@@ -65,12 +65,12 @@ auto make_callable_impl(Func &&func, FunctionSignature<Ret, Function_Params<Para
 // this version peels off the function object itself from the function signature, when used
 // on a callable object
 template<typename Func, typename Ret, typename Object, typename... Param, bool Is_Noexcept>
-auto make_function_t(Func &&func, FunctionSignature<Ret, Function_Params<Object, Param...>, Is_Noexcept, false, false, true>) {
+std::unique_ptr<ProxyFunction> make_function_t(Func &&func, FunctionSignature<Ret, Function_Params<Object, Param...>, Is_Noexcept, false, false, true>) {
   return make_callable_impl(std::forward<Func>(func), FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, false, false, true>{});
 }
 
 template<typename Func, typename Ret, typename... Param, bool Is_Noexcept, bool Is_Member, bool Is_MemberObject>
-auto make_function_t(Func &&func, FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, Is_Member, Is_MemberObject, false> fs) {
+std::unique_ptr<ProxyFunction> make_function_t(Func &&func, FunctionSignature<Ret, Function_Params<Param...>, Is_Noexcept, Is_Member, Is_MemberObject, false> fs) {
   return make_callable_impl(std::forward<Func>(func), fs);
 }
 }// namespace e00::impl::scripting::detail
