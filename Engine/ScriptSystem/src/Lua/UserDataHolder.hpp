@@ -18,6 +18,10 @@ public:
 
   static int LuaGc(lua_State *);
 
+  static int LuaToString(lua_State *);
+
+  static int LuaIndex(lua_State *);
+
   UserDataHolder();
 
   UserDataHolder(BoxedValue &&value);

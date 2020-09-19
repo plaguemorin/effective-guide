@@ -24,7 +24,7 @@ namespace detail {
 
   template<typename T>
   constexpr const char *make_name() {
-#if 0
+#if 1
     auto t = &typeid(T);
     return t->name();
 #else
@@ -76,6 +76,9 @@ namespace detail {
   MAKE_TYPE_INFO_FOR_INTERNAL2(std::unique_ptr<void>, 1003)
   MAKE_TYPE_INFO_FOR_INTERNAL2(const std::unique_ptr<void> &, 1004)
 
+  MAKE_TYPE_INFO_FOR_INTERNAL2(std::nullptr_t, 1005)
+
+
 #undef MAKE_TYPE_ID_FOR
 #undef MAKE_TYPE_ID_FOR_INTERNAL
 }// namespace detail
@@ -116,11 +119,16 @@ struct TypeInfo {
     return _type != rhs._type;
   }
 
+  constexpr bool operator<(const TypeInfo &rhs) const noexcept {
+    return _type < rhs._type;
+  }
+
   constexpr bool bare_equal_type_info(const TypeInfo &ti) const noexcept {
     return _bare == ti._bare;
   }
 
   constexpr type_id_no_rtti id() const noexcept { return _type; }
+  constexpr type_id_no_rtti bare_id() const noexcept { return _bare; }
 
   constexpr std::string_view name() const noexcept { return _name; }
 
@@ -148,8 +156,8 @@ namespace detail {
         std::is_void<T>::value,
         (std::is_arithmetic<T>::value || std::is_arithmetic<typename std::remove_reference<T>::type>::value) && !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, bool>::value,
         std::is_class<T>::value,
-        detail::make_type_id<T>(),
-        detail::make_type_id<typename detail::Bare_Type<T>::type>(),
+        make_type_id<T>(),
+        make_type_id<typename detail::Bare_Type<T>::type>(),
         make_name<T>());
     }
   };

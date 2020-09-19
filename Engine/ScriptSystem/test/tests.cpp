@@ -18,16 +18,12 @@ TEST_CASE("Type Info identifies pointers") {
   int *p = &a;
 
   auto info = e00::impl::scripting::user_type(p);
-  if (!info.is_pointer()) {
-    FAIL();
-  }
+  REQUIRE(info.is_pointer());
 }
 
 TEST_CASE("Script System initializes") {
   auto script = e00::impl::ScriptEngine::Create();
-
-
-  std::cout << "Script engine: " << script->engine_name() << "\n";
+  REQUIRE(script);
 }
 
 TEST_CASE("Can log from script") {
@@ -84,10 +80,7 @@ TEST_CASE("Multiple types of native methods can be called") {
   script->register_function("VALIDATE", [&is_failed](bool a) { is_failed = !a; });
 
   script->parse("\nb(4)\nVALIDATE(a() == 4)\n");
-
-  if (is_failed) {
-    FAIL();
-  }
+  REQUIRE_FALSE(is_failed);
 }
 
 TEST_CASE("Native calls a method in script and gets it's return value") {
@@ -95,19 +88,21 @@ TEST_CASE("Native calls a method in script and gets it's return value") {
   script->parse("\nfunction test ()\n return \"Hello, World\"\nend\n");
 
   auto hello_world = script->call<std::string>("test");
-  if (hello_world == "Hello, World") {
-    SUCCEED();
-  } else {
-    FAIL();
-  }
+  REQUIRE(hello_world == "Hello, World");
 }
 
-// TODO
-//TEST_CASE("Register a variable") {
-//  int a = 5;
-//  auto script = e00::impl::ScriptEngine::Create();
-//  script->register_variable("a", &a);
-//}
+TEST_CASE("Register a variable") {
+  int a = 5;
+  int got_a = 0;
+
+  auto script = e00::impl::ScriptEngine::Create();
+  script->register_variable("a", a);
+  script->register_function("ensure_same", [&](int i) { got_a = i;});
+
+  REQUIRE_FALSE(a == got_a);
+  script->parse("\nensure_same(a)\n");
+  REQUIRE(got_a == a);
+}
 
 TEST_CASE("Pass a script function back to native and call it") {
   auto script = e00::impl::ScriptEngine::Create();
@@ -115,23 +110,18 @@ TEST_CASE("Pass a script function back to native and call it") {
   e00::impl::scripting::BoxedValue val;
 
   script->register_function("test", [&val](e00::impl::scripting::ProxyFunction *proxy_function) {
-    val = proxy_function->operator()(6);
+    val = proxy_function->operator()(4);
   });
   script->parse("\nhalf = function(x)\nreturn x / 2\nend\n\ntest(half)\n");
 
+  REQUIRE(val.is_arithmetic());
   if (val.is_arithmetic()) {
     int result = 0;
     e00::impl::scripting::try_cast<int>(val, [&result](int a) {
       result = a;
     });
 
-    if (result == 2) {
-      SUCCEED();
-    } else {
-      FAIL();
-    }
-  } else {
-    FAIL();
+    REQUIRE(result == 2);
   }
 }
 
@@ -146,18 +136,37 @@ TEST_CASE("Native can return structs") {
   bool is_ok = false;
 
   script->register_function("make_item", []() {
-    return Item{ 1,  "Fred" };
+    return Item{ 1, "Fred" };
   });
 
   script->register_function("print_item_name", [&is_ok](const Item &item) {
     is_ok = (item.id == 1);
   });
 
+  REQUIRE_FALSE(is_ok);
   script->parse("\nprint_item_name(make_item())\n");
+  REQUIRE(is_ok);
+}
 
-  if (!is_ok) {
-    FAIL();
-  }
+TEST_CASE("Can call object methods") {
+  class Simple {
+  public:
+    bool called = false;
+    void call() { called = true; }
+  };
+
+
+  auto script = e00::impl::ScriptEngine::Create();
+  script->register_function("doit", &Simple::call);
+
+  auto r = new Simple;
+  REQUIRE_FALSE(r->called);
+
+  script->register_variable("a", r);
+  script->parse("\nprint(a)\n\na:doit()\n");
+
+  REQUIRE(r->called);
+  delete r;
 }
 
 /*

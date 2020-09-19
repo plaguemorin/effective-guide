@@ -21,7 +21,7 @@ int boxed_to_lua(lua_State *L, const BoxedValue &boxed_rv) {
     try_cast<std::string_view>(boxed_rv, [&L](const std::string_view &str) { lua_pushlstring(L, str.data(), str.size()); });//
 
   if (!matched) {
-    if (boxed_rv.is_class()) {
+    if (boxed_rv.is_class() || boxed_rv.is_pointer()) {
       // We need to send a class-like thing to Lua, we'll put it as user data
       auto **pudh = (lua::UserDataHolder **)lua_newuserdata(L, sizeof(lua::UserDataHolder *));
       if (!pudh) return 0;

@@ -57,6 +57,8 @@ public:
 
   virtual bool is_attribute_function() const noexcept { return false; }
 
+  virtual bool is_member() const noexcept { return false; }
+
   bool is_varargs() const { return _param_count < 0; }
 
   size_t parameter_count() const { return _params.size(); }

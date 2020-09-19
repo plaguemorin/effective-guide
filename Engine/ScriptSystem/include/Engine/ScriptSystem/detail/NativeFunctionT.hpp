@@ -28,6 +28,34 @@ TypeInfo build_return_type_list(Ret (*)(Params...)) {
  * @tparam Callable
  */
 template<typename Func, typename Callable>
+struct NativeFunctionMemberT final : ProxyFunction {
+  explicit NativeFunctionMemberT(Callable f, int argcnt)
+    : ProxyFunction(
+    build_param_type_list(static_cast<Func *>(nullptr)),
+    build_return_type_list(static_cast<Func *>(nullptr)),
+    argcnt),
+      _f(std::move(f)) {
+  }
+
+  bool is_member() const noexcept override {
+    return true;
+  }
+
+protected:
+  BoxedValue do_call(const FunctionParams &params) const override {
+    return call_func(static_cast<Func *>(nullptr), _f, params);
+  }
+
+private:
+  Callable _f;
+};
+
+/**
+ *
+ * @tparam Func
+ * @tparam Callable
+ */
+template<typename Func, typename Callable>
 struct NativeFunctionT final : ProxyFunction {
   explicit NativeFunctionT(Callable f, int argcnt)
     : ProxyFunction(
@@ -52,11 +80,11 @@ std::unique_ptr<ProxyFunction> make_callable_impl(Func &&func, FunctionSignature
     // we now that the Param pack will have only one element, so we are safe expanding it here
     return make_unique_base<ProxyFunction, Attribute_Access<Ret, std::decay_t<Param>...>>(std::forward<Func>(func));
   } else if constexpr (Is_Member) {
-    auto call = [func = std::forward<Func>(func)](auto &&obj, auto &&... param) noexcept(Is_Noexcept) -> decltype(auto) {
+    auto call = [func = std::forward<Func>(func)](auto &&obj, auto &&... param) /*noexcept(Is_Noexcept)*/ -> decltype(auto) {
       return ((get_first_param(Function_Params<Param...>{}, obj).*func)(std::forward<decltype(param)>(param)...));
     };
 
-    return make_unique_base<ProxyFunction, NativeFunctionT<Ret(Param...), decltype(call)>>(std::move(call), sizeof...(Param));
+    return make_unique_base<ProxyFunction, NativeFunctionMemberT<Ret(Param...), decltype(call)>>(std::move(call), sizeof...(Param));
   } else {
     return make_unique_base<ProxyFunction, NativeFunctionT<Ret(Param...), std::decay_t<Func>>>(std::forward<Func>(func), sizeof...(Param));
   }

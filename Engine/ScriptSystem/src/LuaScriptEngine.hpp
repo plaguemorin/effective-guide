@@ -15,8 +15,10 @@ const std::string lua_engine_name = "Lua";
 
 namespace e00::impl::scripting::lua {
 class LuaScriptEngine : public ScriptEngine {
-  std::map<std::string, std::unique_ptr<scripting::ProxyFunction>> _registered_fns;
+  std::map<type_id_no_rtti, std::map<std::string, std::unique_ptr<scripting::ProxyFunction>>> _methods;
   lua_State *_state;
+
+  std::unique_ptr<scripting::ProxyFunction> _bad_method;
 
 public:
   LuaScriptEngine();
@@ -35,5 +37,7 @@ public:
   std::error_code parse(const std::string &code) override;
 
   std::unique_ptr<scripting::ProxyFunction> get_function(const std::string &fn_name, scripting::TypeInfo preferred_return_type) override;
+
+  const std::unique_ptr<scripting::ProxyFunction>& get_method_for_type(const TypeInfo& type, const std::string& method_name) const;
 };
 }// namespace e00::impl::scripting::lua

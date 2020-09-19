@@ -3,6 +3,7 @@
 #include "Lua/LuaToNativeTrampoline.hpp"
 #include "Lua/NamedFunction.hpp"
 #include "Lua/RefFunction.hpp"
+#include "Lua/BoxedToLuaConverter.hpp"
 #include "Lua/UserDataHolder.hpp"
 
 #include <iostream>
@@ -10,16 +11,27 @@
 namespace e00::impl::scripting::lua {
 LuaScriptEngine::LuaScriptEngine()
   : ScriptEngine(),
-    _state(luaL_newstate()) {
+    _state(luaL_newstate()),
+    _bad_method(nullptr) {
   luaL_openlibs(_state);
 
   // Make our genetic metatable for userdata
-  luaL_newmetatable(_state, UserDataHolder::MetaTableName);
-  lua_pushcfunction(_state, UserDataHolder::LuaGc);
-  lua_setfield(_state, -2, "__gc");
-  lua_pushvalue(_state, -1);
-  lua_setfield(_state, -2, "__index");
-  lua_pop(_state, 1);
+  // The if is technically not required as there's no chance we re-execute this
+  if (luaL_newmetatable(_state, UserDataHolder::MetaTableName)) {
+
+
+    lua_pushcfunction(_state, &UserDataHolder::LuaGc);
+    lua_setfield(_state, -2, "__gc");
+
+    lua_pushlightuserdata(_state, this);
+    lua_pushcclosure(_state, &UserDataHolder::LuaIndex, 1);
+    lua_setfield(_state, -2, "__index");
+
+    lua_pushcfunction(_state, &UserDataHolder::LuaToString);
+    lua_setfield(_state, -2, "__tostring");
+
+    lua_pop(_state, 1);
+  }
 }
 
 LuaScriptEngine::~LuaScriptEngine() {
@@ -27,45 +39,34 @@ LuaScriptEngine::~LuaScriptEngine() {
 }
 
 bool LuaScriptEngine::valid_fn_name(const std::string &fn_name) {
-  auto it = _registered_fns.find(fn_name);
-  return it == _registered_fns.end();
+  // TODO: Validate name
+  return !fn_name.empty();
 }
 
 void LuaScriptEngine::add_function(const std::string &fn_name, std::unique_ptr<ProxyFunction> &&fn) {
-  lua_pushlightuserdata(_state, new TrampolineData(this, fn, fn_name));
+  if (fn->is_member()) {
+    // This will be used for <something>:fn_name
+    const auto type_id = fn->parameter(0);
+    _methods[type_id.bare_id()].insert(std::make_pair(fn_name, std::move(fn)));
+    return;
+  }
+
+  lua_pushlightuserdata(_state, new TrampolineData(this, std::move(fn), fn_name));
   lua_pushcclosure(_state, &lua_trampoline, 1);
   lua_setglobal(_state, fn_name.c_str());
-
-  _registered_fns.insert(std::make_pair(fn_name, std::move(fn)));
 }
 
 void LuaScriptEngine::add_variable(const std::string &var_name, scripting::BoxedValue val) {
-  (void)var_name;
-  (void)val;
-
-  // Is this a pointer ?
-  /*  if (val.is_pointer()) {
-    auto **lpudd = static_cast<LuaPointerUserDataData **>(lua_newuserdata(_state, sizeof(LuaPointerUserDataData *)));
-
-    *lpudd = new LuaPointerUserDataData;
-
-    lua_newtable(_state);
-    lua_pushcfunction(_state, &LuaPointerUserDataDataIndex);
-    lua_setfield(_state, -2, "__index");
-    lua_pushcfunction(_state, &LuaPointerUserDataDataTostring);
-    lua_setfield(_state, -2, "__tostring");
-    lua_pushcfunction(_state, &LuaPointerUserDataDataGC);
-    lua_setfield(_state, -2, "__gc");
-    lua_setmetatable(_state, -2);
-  }*/
+  auto ret = boxed_to_lua(_state, val);
+  if (ret == 1) {
+    lua_setglobal(_state, var_name.c_str());
+  }
 }
 
 void LuaScriptEngine::add_type(const TypeInfo &type) {
   if (!type.is_class()) {
     return;
   }
-
-  std::cerr << "Adding type " << type.name() << ", " << type.id() << "\n";
 }
 
 std::error_code LuaScriptEngine::parse(const std::string &code) {
@@ -86,5 +87,17 @@ std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const st
   // take a ref to it
   return std::unique_ptr<scripting::ProxyFunction>(
     new RefFunction(fn_name, _state, luaL_ref(_state, LUA_REGISTRYINDEX), preferred_return_type));
+}
+
+const std::unique_ptr<scripting::ProxyFunction> &LuaScriptEngine::get_method_for_type(const TypeInfo& type, const std::string &method_name) const {
+  const auto it = _methods.find(type.bare_id());
+  if (it != _methods.end()) {
+    const auto mit = it->second.find(method_name);
+    if (mit != it->second.end()) {
+      return mit->second;
+    }
+  }
+
+  return _bad_method;
 }
 }// namespace e00::impl::scripting::lua

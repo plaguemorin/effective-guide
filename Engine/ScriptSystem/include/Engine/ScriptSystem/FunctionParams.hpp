@@ -19,7 +19,8 @@ struct FunctionParams {
   }
 
   explicit FunctionParams(const std::vector<BoxedValue> &vec)
-    : m_begin(&vec.front()), m_end(&vec.front() + vec.size()) {
+    : m_begin(vec.empty() ? nullptr : &vec.front()),
+      m_end(vec.empty() ? nullptr : &vec.front() + vec.size()) {
   }
 
   constexpr FunctionParams() : m_begin(nullptr), m_end(nullptr) {}
