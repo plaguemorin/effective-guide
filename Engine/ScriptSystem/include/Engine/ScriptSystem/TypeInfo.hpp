@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <typeinfo>
 #include <memory>
@@ -67,6 +68,7 @@ namespace detail {
   // Constexpr some well used types
   MAKE_TYPE_ID_FOR(std::string)
   MAKE_TYPE_ID_FOR(std::string_view)
+  MAKE_TYPE_ID_FOR(std::error_code)
   MAKE_TYPE_ID_FOR(ProxyFunction)
 
   // Special case: void (you cannot reference void)
@@ -81,6 +83,7 @@ namespace detail {
 
 #undef MAKE_TYPE_ID_FOR
 #undef MAKE_TYPE_ID_FOR_INTERNAL
+#undef MAKE_TYPE_INFO_FOR_INTERNAL2
 }// namespace detail
 
 /**
@@ -129,7 +132,6 @@ struct TypeInfo {
 
   constexpr type_id_no_rtti id() const noexcept { return _type; }
   constexpr type_id_no_rtti bare_id() const noexcept { return _bare; }
-
   constexpr std::string_view name() const noexcept { return _name; }
 
 private:
@@ -157,7 +159,55 @@ namespace detail {
         (std::is_arithmetic<T>::value || std::is_arithmetic<typename std::remove_reference<T>::type>::value) && !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, bool>::value,
         std::is_class<T>::value,
         make_type_id<T>(),
-        make_type_id<typename detail::Bare_Type<T>::type>(),
+        make_type_id<typename Bare_Type<T>::type>(),
+        make_name<T>());
+    }
+  };
+
+  template<typename T>
+  struct GetTypeInfo<std::unique_ptr<T>> {
+    constexpr static TypeInfo get() noexcept {
+      return TypeInfo(std::is_const<T>::value,
+        std::is_reference<T>::value,
+        std::is_pointer<T>::value,
+        std::is_void<T>::value,
+        (std::is_arithmetic<T>::value || std::is_arithmetic<typename std::remove_reference<T>::type>::value) && !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, bool>::value,
+        std::is_class<T>::value,
+        make_type_id<std::unique_ptr<T>>(),
+        make_type_id<typename Bare_Type<T>::type>(),
+        make_name<T>());
+    }
+  };
+
+  template<typename T>
+  struct GetTypeInfo<const std::unique_ptr<T> &> : GetTypeInfo<std::unique_ptr<T>> {};
+
+  template<typename T>
+  struct GetTypeInfo<std::reference_wrapper<T>> {
+    constexpr static TypeInfo get() noexcept {
+      return TypeInfo(std::is_const<T>::value,
+        std::is_reference<T>::value,
+        std::is_pointer<T>::value,
+        std::is_void<T>::value,
+        (std::is_arithmetic<T>::value || std::is_arithmetic<typename std::remove_reference<T>::type>::value) && !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, bool>::value,
+        std::is_class<T>::value,
+        make_type_id<std::reference_wrapper<T>>(),
+        make_type_id<typename Bare_Type<T>::type>(),
+        make_name<T>());
+    }
+  };
+
+  template<typename T>
+  struct GetTypeInfo<const std::reference_wrapper<T> &> {
+    constexpr static TypeInfo get() noexcept {
+      return TypeInfo(std::is_const<T>::value,
+        std::is_reference<T>::value,
+        std::is_pointer<T>::value,
+        std::is_void<T>::value,
+        (std::is_arithmetic<T>::value || std::is_arithmetic<typename std::remove_reference<T>::type>::value) && !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, bool>::value,
+        std::is_class<T>::value,
+        make_type_id<const std::reference_wrapper<T> &>(),
+        make_type_id<typename Bare_Type<T>::type>(),
         make_name<T>());
     }
   };
