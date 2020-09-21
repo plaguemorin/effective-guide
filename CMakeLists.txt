@@ -38,7 +38,6 @@ add_subdirectory(vendor/magic_enum)
 add_subdirectory(vendor/lua)
 add_subdirectory(lodepng)
 add_subdirectory(Engine)
-add_subdirectory(Game_TEST)
 add_subdirectory(Game_WIN)
 
 if (NOT UNIX AND NOT WIN32)
