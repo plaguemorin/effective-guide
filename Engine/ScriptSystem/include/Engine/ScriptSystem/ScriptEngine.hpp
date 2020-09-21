@@ -11,6 +11,8 @@
 #include "detail/NativeFunctionT.hpp"
 #include "BoxedCast.hpp"
 
+#include <Engine/Stream/Stream.hpp>
+
 namespace e00::impl {
 class ScriptEngine {
 protected:
@@ -71,6 +73,9 @@ public:
     // FAILSAFE: ERR OUT
     return Ret();
   }
+
+  // Default implementation reads everything and calls the string version
+  virtual std::error_code parse(const std::unique_ptr<e00::Stream> &stream);
 
   virtual std::error_code parse(const std::string &code) = 0;
 };

@@ -34,11 +34,14 @@ add_library(Engine01_ScriptSystem STATIC
         src/Lua/NamedFunction.hpp
         src/Lua/LuaProxyFunction.cpp
         src/Lua/LuaProxyFunction.hpp
-        src/Lua/UserDataHolder.cpp src/Lua/UserDataHolder.hpp)
+        src/Lua/UserDataHolder.cpp
+        src/Lua/UserDataHolder.hpp
+        src/Lua/Error.cpp
+        src/Lua/Error.hpp)
 
 
 target_include_directories(Engine01_ScriptSystem PRIVATE src)
 target_include_directories(Engine01_ScriptSystem PUBLIC include)
-target_link_libraries(Engine01_ScriptSystem PUBLIC project_options project_warnings Engine01_Logger lua)
+target_link_libraries(Engine01_ScriptSystem PUBLIC project_options project_warnings Engine01_Logger Engine01_Stream lua)
 
 add_subdirectory(test)

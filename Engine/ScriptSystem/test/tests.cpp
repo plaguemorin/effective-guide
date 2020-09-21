@@ -163,7 +163,7 @@ TEST_CASE("Can call object methods") {
   REQUIRE_FALSE(r->called);
 
   script->register_variable("a", r);
-  script->parse("\nprint(a)\n\na:doit()\n");
+  script->parse("\na:doit()\n");
 
   REQUIRE(r->called);
   delete r;

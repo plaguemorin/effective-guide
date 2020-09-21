@@ -5,21 +5,32 @@
 #include "Lua/RefFunction.hpp"
 #include "Lua/BoxedToLuaConverter.hpp"
 #include "Lua/UserDataHolder.hpp"
+#include "Lua/Error.hpp"
 
-#include <iostream>
+namespace {
+void *l_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
+  //auto *engine = static_cast<e00::impl::scripting::lua::LuaScriptEngine *>(ud);
+  (void)ud;
+  (void)osize; /* not used */
+
+  if (nsize == 0) {
+    free(ptr);
+    return nullptr;
+  } else
+    return realloc(ptr, nsize);
+}
+}// namespace
 
 namespace e00::impl::scripting::lua {
 LuaScriptEngine::LuaScriptEngine()
   : ScriptEngine(),
-    _state(luaL_newstate()),
+    _state(lua_newstate(&l_alloc, this)),
     _bad_method(nullptr) {
-  luaL_openlibs(_state);
+//  luaL_openlibs(_state);
 
   // Make our genetic metatable for userdata
   // The if is technically not required as there's no chance we re-execute this
   if (luaL_newmetatable(_state, UserDataHolder::MetaTableName)) {
-
-
     lua_pushcfunction(_state, &UserDataHolder::LuaGc);
     lua_setfield(_state, -2, "__gc");
 
@@ -70,11 +81,65 @@ void LuaScriptEngine::add_type(const TypeInfo &type) {
 }
 
 std::error_code LuaScriptEngine::parse(const std::string &code) {
-  luaL_loadstring(_state, code.c_str());
-  lua_pcall(_state, 0, 0, 0);
+  struct ReaderState {
+    const std::string_view &data;
+    size_t read_pos;
+  };
 
-  return {};
+  lua_Reader reader = [](lua_State *L, void *user_data, size_t *out_size) -> const char * {
+    auto *state = static_cast<ReaderState *>(user_data);
+    *out_size = 0;
+
+    if (state->read_pos < state->data.size()) {
+      *out_size = state->data.size();
+      state->read_pos = state->data.size();
+      return state->data.data();
+    }
+
+    return nullptr;
+  };
+
+  ReaderState state{ code, 0 };
+  if (auto ec = lua_ret_to_error_code(lua_load(_state, reader, &state, "native_load", nullptr))) {
+    return ec;
+  }
+
+  return lua_ret_to_error_code(lua_pcall(_state, 0, 0, 0));
 }
+
+std::error_code LuaScriptEngine::parse(const std::unique_ptr<e00::Stream> &stream) {
+  struct ReaderState {
+    char buffer[256];
+    const std::unique_ptr<e00::Stream> &stream;
+  };
+
+  lua_Reader reader = [](lua_State *L, void *ud, size_t *sz) -> const char * {
+    auto *state = static_cast<ReaderState *>(ud);
+    *sz = 0;
+
+    const auto max_read = state->stream->max_read();
+    if (max_read > 0) {
+      *sz = 255;
+      if (*sz > max_read) {
+        *sz = max_read;
+      }
+
+      state->stream->read(*sz, state->buffer);
+      return state->buffer;
+    }
+
+    return nullptr;
+  };
+
+  ReaderState state{ {}, stream };
+
+  if (auto ec = lua_ret_to_error_code(lua_load(_state, reader, &state, "parse(stream)", nullptr))) {
+    return ec;
+  }
+
+  return lua_ret_to_error_code(lua_pcall(_state, 0, 0, 0));
+}
+
 std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const std::string &fn_name, scripting::TypeInfo preferred_return_type) {
   // Get a global of the function name
   lua_getglobal(_state, fn_name.c_str());
@@ -88,8 +153,7 @@ std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const st
   return std::unique_ptr<scripting::ProxyFunction>(
     new RefFunction(fn_name, _state, luaL_ref(_state, LUA_REGISTRYINDEX), preferred_return_type));
 }
-
-const std::unique_ptr<scripting::ProxyFunction> &LuaScriptEngine::get_method_for_type(const TypeInfo& type, const std::string &method_name) const {
+const std::unique_ptr<scripting::ProxyFunction> &LuaScriptEngine::get_method_for_type(const TypeInfo &type, const std::string &method_name) const {
   const auto it = _methods.find(type.bare_id());
   if (it != _methods.end()) {
     const auto mit = it->second.find(method_name);
