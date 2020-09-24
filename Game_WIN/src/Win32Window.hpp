@@ -3,32 +3,19 @@
 #include <windows.h>
 
 class Win32Window {
+  HWND _hWnd;
+
 protected:
-  [[nodiscard]] virtual PCWSTR ClassName() const = 0;
+  Win32Window(HINSTANCE hInstance, LPCWSTR className, PCWSTR lpWindowName, int width, int height);
 
-  virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
-
-  HWND _hwnd;
+  virtual LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
   static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-  Win32Window();
-
+public:
   virtual ~Win32Window();
 
-  bool Create(
-          PCWSTR lpWindowName,
-          DWORD dwStyle,
-          DWORD dwExStyle = 0,
-          int x = CW_USEDEFAULT,
-          int y = CW_USEDEFAULT,
-          int nWidth = CW_USEDEFAULT,
-          int nHeight = CW_USEDEFAULT,
-          HWND hWndParent = nullptr,
-          HMENU hMenu = nullptr
-  );
+  void show();
 
-  [[nodiscard]] HWND windowHandle() const { return _hwnd; }
+  void show(int showCmd);
 };
-
-

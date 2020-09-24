@@ -5,7 +5,7 @@
 
 namespace e00 {
 template<typename T>
-struct Vec3 {
+struct Vec3 final {
   typedef T type;
 
   type x, y, z;

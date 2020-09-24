@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace e00 {
-struct Color {
+struct Color final {
   uint8_t red;
   uint8_t green;
   uint8_t blue;
@@ -18,6 +18,15 @@ struct Color {
     ((rgb & 0x0000FF00u) >> 8u) & 0xFF,
     (rgb & 0x000000FFu)
   ) {}
+
+  Color& operator=(const Color& rhs) {
+    if (&rhs != this) {
+      red = rhs.red;
+      green = rhs.green;
+      blue = rhs.blue;
+    }
+    return *this;
+  }
 
   /**
    * Luma value, CCIR 601 weighted

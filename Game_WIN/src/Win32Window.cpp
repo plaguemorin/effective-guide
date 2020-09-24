@@ -1,13 +1,23 @@
 #include "Win32Window.hpp"
 
-Win32Window::Win32Window() : _hwnd(nullptr) {
+Win32Window::Win32Window(HINSTANCE hInstance, LPCWSTR className, PCWSTR lpWindowName, int width, int height) {
+  WNDCLASS wc = { 0 };
 
+  if (!GetClassInfo(hInstance, className, &wc)) {
+    wc.lpfnWndProc = &WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = className;
+    RegisterClass(&wc);
+  }
+
+  _hWnd = CreateWindowEx(0, wc.lpszClassName, lpWindowName, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, nullptr, nullptr, hInstance, /*this*/nullptr);
+  SetWindowLongPtr(_hWnd, GWLP_USERDATA, (LONG_PTR)this);
 }
 
 Win32Window::~Win32Window() {
-  if (_hwnd) {
-    DestroyWindow(_hwnd);
-    _hwnd = nullptr;
+  if (_hWnd) {
+    DestroyWindow(_hWnd);
+    _hWnd = nullptr;
   }
 }
 
@@ -15,13 +25,13 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
   Win32Window *impl = nullptr;
 
   if (uMsg == WM_NCCREATE) {
-    auto *pCreate = (CREATESTRUCT *) lParam;
-    impl = (Win32Window *) pCreate->lpCreateParams;
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) impl);
-
-    impl->_hwnd = hwnd;
+    if (auto *pCreate = (CREATESTRUCT *)lParam) {
+      if ((impl = (Win32Window *)pCreate->lpCreateParams)) {
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)impl);
+      }
+    }
   } else {
-    impl = (Win32Window *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    impl = (Win32Window *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   }
 
   if (impl) {
@@ -31,16 +41,14 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LP
   }
 }
 
-bool Win32Window::Create(PCWSTR lpWindowName, DWORD dwStyle, DWORD dwExStyle, int x, int y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu) {
-  WNDCLASS wc = {0};
-  wc.lpfnWndProc = &WindowProc;
-  wc.hInstance = GetModuleHandle(nullptr);
-  wc.lpszClassName = ClassName();
-  RegisterClass(&wc);
+LRESULT Win32Window::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
+  return DefWindowProc(_hWnd, uMsg, wParam, lParam);
+}
 
-  _hwnd = CreateWindowEx(
-          dwExStyle, ClassName(), lpWindowName, dwStyle, x, y,
-          nWidth, nHeight, hWndParent, hMenu, GetModuleHandle(nullptr), this
-  );
-  return _hwnd != nullptr;
+void Win32Window::show() {
+  ShowWindow(_hWnd, SW_SHOW);
+}
+
+void Win32Window::show(int showCmd) {
+  ShowWindow(_hWnd, showCmd);
 }

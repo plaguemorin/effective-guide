@@ -4,7 +4,7 @@
 
 namespace e00 {
 template<typename T>
-struct Rect {
+struct Rect final {
   typedef T type;
 
   T x, y, width, height;

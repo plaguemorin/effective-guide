@@ -30,32 +30,27 @@ Win32System::Win32System(HINSTANCE hInstance)
 Win32System::~Win32System() {
 }
 
-bool Win32System::Init(int nCmdShow) {
-  if (Create(L"E00", WS_OVERLAPPEDWINDOW)) {
-    ShowWindow(windowHandle(), nCmdShow);
-  }
-  return false;
-}
 
 void Win32System::processWin32() {
   MSG msg = {};
 
-  while (PeekMessage(&msg, windowHandle(), 0, 0, PM_REMOVE)) {
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-  }
-}
+  while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+    if (msg.hwnd != nullptr) {
+      if (IsDialogMessage(msg.hwnd, &msg)) {
+        continue;
+      }
 
-PCWSTR Win32System::ClassName() const {
-  return L"E00CLZ";
-}
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
+      continue;
+    }
 
-LRESULT Win32System::HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) {
-  switch (uMsg) {
-    case WM_DESTROY:
+    /* Message has no window... */
+    if (msg.message == WM_QUIT) {
       _need_exit = true;
-      return 0;
+    }
   }
-
-  return DefWindowProc(windowHandle(), uMsg, wParam, lParam);
+}
+bool Win32System::needsQuit() {
+  return std::exchange(_need_exit, false);
 }

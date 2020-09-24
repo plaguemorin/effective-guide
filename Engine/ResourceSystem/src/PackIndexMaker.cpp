@@ -13,6 +13,11 @@ std::error_code PackIndexMaker::handle_entry(const cfg::Entry &configuration_ent
       _index.name = configuration_entry.value;
       return {};
     }
+
+    if (configuration_entry.name == "Script") {
+      _index.script = configuration_entry.value;
+      return {};
+    }
   }
 
   // Maybe it's a resource ?

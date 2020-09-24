@@ -45,6 +45,13 @@ class Manager {
   void remove_reference(const ResourcePtrData *data);
 
 public:
+  struct PackLoadResult {
+    std::string pack_id;
+    std::error_code error;
+
+    explicit operator bool() const noexcept { return error.value() != 0; }
+  };
+
   Manager();
 
   ~Manager();
@@ -75,7 +82,14 @@ public:
    * @param pack_loader the pack loader
    * @return error code, if any
    */
-  std::error_code add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loader);
+  PackLoadResult add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loader);
+
+  /**
+   *
+   * @param pack_id
+   * @return
+   */
+  std::unique_ptr<Stream> get_script_for_pack_id(const std::string &pack_id);
 };
 
 

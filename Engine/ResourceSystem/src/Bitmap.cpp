@@ -157,17 +157,4 @@ void Bitmap::clear(uint8_t color_index) {
     }
   }
 }
-
-void Bitmap::set_pixel(const Vec2<int>& point, const Color& color) {
-  const auto palette = color_map();
-  if (!palette)
-    return;
-
-  (void)point;
-  (void)color;
-
-//  auto plan = palette->devise_best_mixing_plan<16>(color);
- // auto map_value = map[(point.x & 7) + ((point.y & 7) << 3)];
- // set_pixel(point, plan.color_index[map_value]);
-}
 }

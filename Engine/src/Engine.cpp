@@ -69,6 +69,7 @@ std::unique_ptr<Engine> Engine::Create(sys::RootStreamFactory *root_stream_facto
   // Initialize things that need resources to validate
 
 
+
   return engine;
 }
 
@@ -86,7 +87,10 @@ Engine::Engine(sys::RootStreamFactory *root_stream_factory)
 
   _logger.info(SourceLocation(), "Engine configured. Using script engine: {}", _script_engine->engine_name());
 
-  _script_engine->register_function("running", [&]() { return this->running(); });
+  _script_engine->register_function("quit", &Engine::ask_quit);
+  _script_engine->register_function("play_map", &Engine::play_map);
+  _script_engine->register_function("is_running", &Engine::running);
+  _script_engine->register_variable("engine", this);
 }
 
 Engine::~Engine() {
@@ -104,7 +108,18 @@ bool Engine::running() const {
 
 std::error_code Engine::add_resource_pack(const std::string &pack_name) {
   if (auto pak = _root_stream_factory->load_pack(pack_name)) {
-    return _resource_manager->add_pack(std::move(pak));
+    auto result = _resource_manager->add_pack(std::move(pak));
+    if (result.error) {
+      return result.error;
+    }
+
+    // The pack might have some scripts that we need to load
+    if (auto script_stream = _resource_manager->get_script_for_pack_id(result.pack_id)) {
+      _logger.info(SourceLocation(), "Pack {} has scripts", result.pack_id);
+      _script_engine->parse(script_stream);
+    }
+
+    return {};
   }
 
   return e00::make_error_code(EngineErrorCode::no_stream_loader_for_pak);

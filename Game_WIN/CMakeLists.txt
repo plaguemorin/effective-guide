@@ -14,7 +14,7 @@ add_executable(Game_WIN WIN32
         src/Win32Window.hpp
         src/Win32Window.cpp
         src/Win32FileStream.cpp
-        src/Win32FileStream.hpp src/Win32StreamFactory.cpp src/Win32StreamFactory.hpp src/string_2_wstring.hpp)
+        src/Win32FileStream.hpp src/Win32StreamFactory.cpp src/Win32StreamFactory.hpp src/string_2_wstring.hpp src/RenderWindow.cpp src/RenderWindow.hpp)
 
 target_include_directories(Game_WIN PUBLIC
         $ENV{UniversalCRTSdkDir}/Include/ucrt

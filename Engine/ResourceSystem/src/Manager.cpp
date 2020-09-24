@@ -53,12 +53,12 @@ Manager::Manager()
 
 Manager::~Manager() {}
 
-std::error_code Manager::add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loader) {
+Manager::PackLoadResult Manager::add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loader) {
   // Make sure we don't try to access NULL, that would be a shame...
   if (!pack_loader) {
     // Err, wat?
     _logger.error(SourceLocation(), "Asked to add a null pack, aborting");
-    return make_error_code(ResourceError::invalid_pack);
+    return { {}, make_error_code(ResourceError::invalid_pack) };
   }
 
   // PORTING: IF YOUR PLATFORM NEED FULL PATH (XBOX) PLEASE IMPLEMENT IN THE StreamFactory SUBCLASS
@@ -69,7 +69,7 @@ std::error_code Manager::add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loa
     // Try and parse the INI
     if (auto ec = cfg::parse(cfg_stream, &listener)) {
       _logger.error(SourceLocation(), "Failed to load pack configuration: {}", ec.message());
-      return ec;
+      return { index.id, ec };
     }
 
     index.pack = std::move(pack_loader);
@@ -79,10 +79,10 @@ std::error_code Manager::add_pack(std::unique_ptr<sys::StreamFactory> &&pack_loa
 
     // Add it the the knowledge base
     _resources_index.emplace_back(std::move(index));
-    return {};
+    return { index.id, {} };
   }
 
-  return make_error_code(ResourceError::invalid_pack);
+  return { {}, make_error_code(ResourceError::invalid_pack) };
 }
 
 std::unique_ptr<Resource> Manager::load_resource(const std::string &resource_name, info::Type type) {
@@ -116,9 +116,19 @@ std::unique_ptr<Resource> Manager::load_resource(const std::string &resource_nam
 }
 
 
+std::unique_ptr<Stream> Manager::get_script_for_pack_id(const std::string &pack_id) {
+  for (const auto &pack : _resources_index) {
+    if (pack.id == pack_id && !pack.script.empty()) {
+      return pack.pack->open_stream(pack.script);
+    }
+  }
+  return {};
+}
+
 void Manager::add_reference(const ResourcePtrData *data) {
   (void)data;
 }
+
 void Manager::remove_reference(const ResourcePtrData *data) {
   (void)data;
 }

@@ -8,7 +8,7 @@
 
 namespace e00 {
 template<std::size_t ColorCount>
-struct Palette {
+struct Palette final {
   std::array<Color, ColorCount> colors;
 
   [[nodiscard]] uint8_t color_count() const { return ColorCount; }
@@ -22,7 +22,7 @@ struct Palette {
     return result;
   }
 
-/*  template<std::size_t MatrixSize>
+  /*  template<std::size_t MatrixSize>
   PaletteMixingPlan<MatrixSize> devise_best_mixing_plan(const Color &src, const double errorMul = 0.09) const {
     PaletteMixingPlan<MatrixSize> result = {};
 

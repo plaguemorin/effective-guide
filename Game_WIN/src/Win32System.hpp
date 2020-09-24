@@ -8,27 +8,23 @@
 
 #include <Engine/Stream/StreamFactory.hpp>
 
-class Win32System : public Win32Window {
+class Win32System {
   HINSTANCE _hInstance;
   bool _need_exit;
 
-  FILE * _newStdout = nullptr;
-  FILE * _newStderr = nullptr;
-  FILE * _newStdin = nullptr;
+  FILE *_newStdout = nullptr;
+  FILE *_newStderr = nullptr;
+  FILE *_newStdin = nullptr;
+
+  Win32Window *_window;
 
 public:
   explicit Win32System(HINSTANCE hInstance);
 
-  ~Win32System() override;
-
-  bool Init(int nCmdShow);
+  ~Win32System();
 
   void processWin32();
 
-protected:
-  PCWSTR ClassName() const override;
-
-  LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+  HINSTANCE instance() const { return _hInstance; }
+  bool needsQuit();
 };
-
-

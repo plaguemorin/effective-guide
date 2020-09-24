@@ -22,6 +22,7 @@ struct PackIndex {
 
   std::string id;
   std::string name;
+  std::string script;
 
   std::unique_ptr<sys::StreamFactory> pack;
   std::list<Locator> resource_index;
@@ -42,12 +43,14 @@ struct PackIndex {
 
     // We're looking for name AND type
     for (const auto &i : resource_index) {
-      if (i.name == resource_name && i.get_type_info == res_type) {
+      if (i.name == resource_name && i.type == res_type) {
         return i;
       }
     }
 
     return end_;
   }
+
+
 };
 }// namespace e00::resource

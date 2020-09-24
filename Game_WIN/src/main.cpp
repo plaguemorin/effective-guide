@@ -6,6 +6,7 @@
 
 #include "Win32System.hpp"
 #include "Win32StreamFactory.hpp"
+#include "RenderWindow.hpp"
 
 namespace {
 class LoggerSink : public e00::sys::LoggerSink {
@@ -19,11 +20,10 @@ public:
     fputc('\n', stderr);
   }
 };
-}
+}// namespace
 
 INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*unused*/, PWSTR pCmdLine, int nCmdShow) {
   Win32System system(hInstance);
-  system.Init(nCmdShow);
 
   // Early Init
   LoggerSink logger_sink;
@@ -34,20 +34,24 @@ INT WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE /*unused*/, PWSTR pCmdLine, i
   auto e = e00::Engine::Create(&stream_factory);
 
   if (!e) {
+    logger_sink.error("Failed to initialize engine");
     return 1;
   }
 
-  // Set the output screen
-  e->set_output_screen(nullptr);
+  RenderWindow output_screen(system, {640, 480});
+  output_screen.show(nCmdShow);
 
-  e->play_map("Overworld");
+  // Set the output screen
+  e->set_output_screen(&output_screen);
 
   // Run the message loop.
   while (e->running()) {
     system.processWin32();
+    if (system.needsQuit()) {
+      e->ask_quit();
+      continue;
+    }
     e->update(std::chrono::milliseconds(5));
-
-    // Render
     e->render();
   }
 
