@@ -2,6 +2,7 @@
 
 #include <array>
 #include <algorithm>
+#include <type_traits>
 
 #include <Engine/Math/Color.hpp>
 #include <Engine/Math/PaletteMixingPlan.hpp>
@@ -9,7 +10,30 @@
 namespace e00 {
 template<std::size_t ColorCount>
 struct Palette final {
+  Color invalid;
   std::array<Color, ColorCount> colors;
+
+  template<typename T>
+  typename std::enable_if<std::is_integral_v<T>, Color &>::type operator[](T idx) {
+    if (idx >= ColorCount) return invalid;
+
+    if constexpr (std::is_signed<T>::value) {
+      if (idx < 0) return invalid;
+    }
+
+    return colors.at(idx);
+  }
+
+  template<typename T>
+  typename std::enable_if<std::is_integral_v<T>, const Color &>::type operator[](T idx) const {
+    if (idx >= ColorCount) return invalid;
+
+    if constexpr (std::is_signed<T>::value) {
+      if (idx < 0) return invalid;
+    }
+
+    return colors.at(idx);
+  }
 
   [[nodiscard]] uint8_t color_count() const { return ColorCount; }
 

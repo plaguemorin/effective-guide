@@ -51,6 +51,7 @@ void Win32System::processWin32() {
     }
   }
 }
+
 bool Win32System::needsQuit() {
   return std::exchange(_need_exit, false);
 }

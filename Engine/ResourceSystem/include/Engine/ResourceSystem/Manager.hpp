@@ -13,6 +13,9 @@
 #include <Engine/ResourceSystem/Resources/Bitmap.hpp>
 #include <Engine/ResourceSystem/Resources/Sprite.hpp>
 
+#include <Engine/ResourceSystem/Info/Map.hpp>
+#include <Engine/ResourceSystem/Info/Bitmap.hpp>
+
 #include <Logger/Logger.hpp>
 #include <Engine/Stream/StreamFactory.hpp>
 
@@ -21,14 +24,10 @@ template<typename T>
 struct resource_to_info_type {};
 
 template<>
-struct resource_to_info_type<Map> {
-  static constexpr info::Type info_type = info::Type::map;
-};
+struct resource_to_info_type<Map> { static constexpr info::Type info_type = info::Type::map; };
 
 template<>
-struct resource_to_info_type<Bitmap> {
-  static constexpr info::Type info_type = info::Type::bitmap;
-};
+struct resource_to_info_type<Bitmap> { static constexpr info::Type info_type = info::Type::bitmap; };
 
 class Manager {
   friend class ResourcePtrData;
