@@ -68,7 +68,7 @@ BoxedValue NullToX(BoxedValue &&original, const TypeInfo &target) {
 BoxedValue lua_to_boxed_value(lua_State *L, int n, const TypeInfo &info) {
   auto guessed = lua_to_boxed_value_guess(L, n);
 
-  // Shortcut if it's the right type
+  // Shortcut if it's the right contained_type
   if (guessed.get_type_info() == info || guessed.get_type_info().bare_equal_type_info(info)) {
     return guessed;
   }

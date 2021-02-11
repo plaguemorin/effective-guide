@@ -2,8 +2,10 @@
 
 #include <array>
 #include <chrono>
+#include <list>
 #include <unordered_map>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <memory>
 
@@ -12,14 +14,14 @@
 #include <Engine/System/RootStreamFactory.hpp>
 #include <Engine/Stream/StreamFactory.hpp>
 
-#include <Engine/ResourceSystem/Manager.hpp>
+#include <Engine/Resource.hpp>
+#include <Engine/Resources/ResourcePtr.hpp>
 
 #include <Logger/Logger.hpp>
 #include <Logger/LoggerSink.hpp>
 
 namespace e00 {
 namespace impl {
-  class State;
   class ScriptEngine;
 }// namespace impl
 
@@ -27,19 +29,29 @@ namespace impl {
  * Core class
  */
 class Engine {
-  friend class impl::State;
+  // For lazy resource loading
+  friend class e00::resource::detail::ControlBlockObject;
+
   const static std::chrono::milliseconds UPDATE_PERIOD;
+  const resource::ResourcePtr<resource::Resource> _bad_resource;
+
+  struct Pack {
+    std::unique_ptr<sys::StreamFactory> stream_factory;
+  };
 
   impl::Logger _logger;
 
-  sys::RootStreamFactory *_root_stream_factory;
   std::array<sys::InputSystem *, 4> _input_systems;
-  std::unique_ptr<resource::Manager> _resource_manager;
   sys::OutputScreen *_output_screen;
   std::chrono::milliseconds _lag;
   std::chrono::milliseconds _last_render;
-  std::unique_ptr<impl::State> _current_state;
   std::unique_ptr<impl::ScriptEngine> _script_engine;
+
+  bool _running;
+
+  std::list<Pack> _packs;
+  // Loaded resources
+  std::list<resource::ResourcePtr<resource::Resource>> _resources;
 
   // Processes a single update
   void tick_update(std::chrono::milliseconds delta);
@@ -52,7 +64,25 @@ class Engine {
   // Values read from configuration ([setup] section)
   std::unordered_map<std::string, std::string> _setup;
 
-  explicit Engine(sys::RootStreamFactory *root_stream_factory);
+  // Find a resource
+  [[nodiscard]] const resource::ResourcePtr<resource::Resource>& find_resource(const std::string_view &name) const;
+
+  template<typename T>
+  resource::ResourcePtr<T> find_resource_t(const std::string_view &name) const {
+    if (const auto &res = find_resource(name)) {
+#if 1
+      if (res.contained_type() == type_id<T>()) {
+        return resource::resource_ptr_cast<T>(res);
+      }
+#else
+      return resource::resource_ptr_cast<T>(res);
+#endif
+    }
+    return nullptr;
+  }
+
+  // Perform a lazy load
+  resource::Resource* load_resource(resource::detail::ControlBlockObject& source);
 
 public:
   static void add_logger_sink(sys::LoggerSink *logger_sink);
@@ -67,6 +97,8 @@ public:
    * @return the engine instance or nullptr if an error occurred
    */
   static std::unique_ptr<Engine> Create(sys::RootStreamFactory *root_stream_factory);
+
+  Engine();
 
   Engine(const Engine &) = delete;
 
@@ -133,12 +165,18 @@ public:
   void ask_quit();
 
   /**
+   * Adds a known resource, the engine takes ownership of the lifecycle
+   * @param resource the resource to add
+   */
+  void add_resource(std::unique_ptr<resource::Resource> &&resource);
+
+  /**
    * Adds a resource pack
    *
    * @param pack_name the name of the new pack; this will be loaded by the root stream factory
    * @return error code, if any
    */
-  std::error_code add_resource_pack(const std::string& pack_name);
+  std::error_code add_resource_pack(std::unique_ptr<sys::StreamFactory> &&pack);
 
   /**
    * An input system that needs to be queried when updating

@@ -53,7 +53,7 @@ function(set_project_warnings project_name)
       -Woverloaded-virtual # warn if you overload (not override) a virtual
                            # function
       #-Wpedantic # warn if non-standard C++ is used
-      -Wconversion # warn on type conversions that may lose data
+      -Wconversion # warn on contained_type conversions that may lose data
       -Wsign-conversion # warn on sign conversions
       -Wnull-dereference # warn if a null dereference is detected
       -Wdouble-promotion # warn if float is implicit promoted to double
@@ -74,7 +74,7 @@ function(set_project_warnings project_name)
       -Wduplicated-branches # warn if if / else branches have duplicated code
       -Wlogical-op # warn about logical operations being used where bitwise were
                    # probably wanted
-      -Wuseless-cast # warn if you perform a cast to the same type
+      -Wuseless-cast # warn if you perform a cast to the same contained_type
   )
 
   if(MSVC)

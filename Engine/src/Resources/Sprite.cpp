@@ -1,4 +1,4 @@
-#include <Engine/ResourceSystem/Resources/Sprite.hpp>
+#include <Engine/Resources/Sprite.hpp>
 
 namespace e00::resource {
 

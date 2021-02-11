@@ -1,6 +1,10 @@
 #include "LuaScriptEngine.hpp"
+
+#include <sstream>
+
 #include "Lua/TrampolineData.hpp"
 #include "Lua/LuaToNativeTrampoline.hpp"
+#include "Lua/LuaToBoxedConverter.hpp"
 #include "Lua/NamedFunction.hpp"
 #include "Lua/RefFunction.hpp"
 #include "Lua/BoxedToLuaConverter.hpp"
@@ -19,15 +23,44 @@ void *l_alloc(void *ud, void *ptr, size_t osize, size_t nsize) {
   } else
     return realloc(ptr, nsize);
 }
+
+
+int lua_log(lua_State *L) {
+  using namespace e00::impl::scripting;
+  lua_Integer level = lua_tointegerx(L, lua_upvalueindex(1), nullptr);
+  auto *engine = static_cast<lua::LuaScriptEngine *>(lua_touserdata(L, lua_upvalueindex(2)));
+
+  // make the string
+  std::stringstream ss;
+  const auto args_count = lua_gettop(L);
+
+  for (int i = 0; i < args_count; i++) {
+    auto boxed_value = lua_to_boxed_value_guess(L, i + 1);
+
+    if (boxed_value.get_type_info().bare_equal_type_info(user_type<std::string>())) {
+      ss << cast<std::string>(boxed_value);
+    } else if (boxed_value.get_type_info().bare_equal_type_info(user_type<int>())) {
+      ss << cast<int>(boxed_value);
+    } else if (boxed_value.get_type_info().bare_equal_type_info(user_type<float>())) {
+      ss << cast<float>(boxed_value);
+    }
+
+    // TODO: Support userdata
+  }
+
+  // is it level 0 (info) or 1 (error)
+  engine->log_from_lua(level, ss.str());
+
+  return 0;
+}
 }// namespace
 
 namespace e00::impl::scripting::lua {
 LuaScriptEngine::LuaScriptEngine()
   : ScriptEngine(),
     _state(lua_newstate(&l_alloc, this)),
+    _logger("LuaScript"),
     _bad_method(nullptr) {
-//  luaL_openlibs(_state);
-
   // Make our genetic metatable for userdata
   // The if is technically not required as there's no chance we re-execute this
   if (luaL_newmetatable(_state, UserDataHolder::MetaTableName)) {
@@ -43,6 +76,17 @@ LuaScriptEngine::LuaScriptEngine()
 
     lua_pop(_state, 1);
   }
+
+  // Push special log functions
+  lua_pushinteger(_state, 0);
+  lua_pushlightuserdata(_state, this);
+  lua_pushcclosure(_state, &lua_log, 2);
+  lua_setglobal(_state, "info");
+
+  lua_pushinteger(_state, 1);
+  lua_pushlightuserdata(_state, this);
+  lua_pushcclosure(_state, &lua_log, 2);
+  lua_setglobal(_state, "error");
 }
 
 LuaScriptEngine::~LuaScriptEngine() {
@@ -153,6 +197,7 @@ std::unique_ptr<scripting::ProxyFunction> LuaScriptEngine::get_function(const st
   return std::unique_ptr<scripting::ProxyFunction>(
     new RefFunction(fn_name, _state, luaL_ref(_state, LUA_REGISTRYINDEX), preferred_return_type));
 }
+
 const std::unique_ptr<scripting::ProxyFunction> &LuaScriptEngine::get_method_for_type(const TypeInfo &type, const std::string &method_name) const {
   const auto it = _methods.find(type.bare_id());
   if (it != _methods.end()) {
@@ -164,4 +209,12 @@ const std::unique_ptr<scripting::ProxyFunction> &LuaScriptEngine::get_method_for
 
   return _bad_method;
 }
+void LuaScriptEngine::log_from_lua(int level, const std::string_view &str) {
+  if (level == 0) {
+    _logger.info(SourceLocation(), "SCRIPT INFO: {}", str);
+  } else {
+    _logger.error(SourceLocation(), "SCRIPT ERROR: {}", str);
+  }
+}
+
 }// namespace e00::impl::scripting::lua

@@ -19,6 +19,8 @@ std::string EngineErrCategory::message(int ev) const {
     case e00::EngineErrorCode::invalid_argument: return "invalid argument";
     case e00::EngineErrorCode::dependent_resource_not_found: return "dependent resource not found";
     case e00::EngineErrorCode::no_stream_loader_for_pak: return "no stream loader for pak";
+    case e00::EngineErrorCode::invalid_pack: return "invalid pack;";
+    case e00::EngineErrorCode::invalid_pack_configuration: return "invalid pack configuration";
   }
   return {};
 }

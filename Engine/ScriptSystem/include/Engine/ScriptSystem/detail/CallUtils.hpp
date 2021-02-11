@@ -18,7 +18,7 @@ Ret call_func1(Ret (*)(Params...),
 }
 
 /// Used by Proxy_Function_Impl to perform typesafe execution of a function.
-/// The function attempts to unbox each parameter to the expected type.
+/// The function attempts to unbox each parameter to the expected contained_type.
 /// if any unboxing fails the execution of the function fails and
 /// the bad_boxed_cast is passed up to the caller.
 template<typename Callable, typename Ret, typename... Params>

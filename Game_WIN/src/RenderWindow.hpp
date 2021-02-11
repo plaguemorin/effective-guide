@@ -15,15 +15,15 @@ class RenderWindow final
   HBITMAP _win32_bitmap;
 
 public:
-  explicit RenderWindow(Win32System &system, const e00::Vec2I &size);
+  explicit RenderWindow(Win32System &system, const e00::Vec2<uint16_t> &size);
   ~RenderWindow() final = default;
 
   std::unique_ptr<e00::resource::Bitmap> convert_to_hardware(const std::unique_ptr<e00::resource::Bitmap> &from) final;
-  uint8_t get_pixel(const e00::Vec2<int> &point) const final;
-  void set_pixel(const e00::Vec2<int> &point, uint8_t color) final;
+  uint8_t get_pixel(const e00::Vec2<uint16_t> &point) const final;
+  void set_pixel(const e00::Vec2<uint16_t> &point, uint8_t color) final;
   const e00::Palette<0xFF> *color_map() const final { return &_palette; }
   void set_color(uint8_t number, e00::Color color) final;
-  void blit_bitmap(const e00::Vec2<int> &from, const Bitmap *source) final;
+  void blit_bitmap(const e00::Vec2<uint16_t> &to, const Bitmap *source) final;
 
 protected:
   LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) final;

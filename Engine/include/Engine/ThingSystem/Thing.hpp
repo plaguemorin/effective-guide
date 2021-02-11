@@ -8,8 +8,8 @@
 
 #include <Engine/CommonTypes.hpp>
 #include <Engine/Math.hpp>
+#include <Engine/Resource.hpp>
 #include <Engine/ThingSystem/ComponentContainer.hpp>
-#include <Engine/ResourceSystem/Resource.hpp>
 
 /*
  * While a component system would be nice,
@@ -49,13 +49,13 @@ public:
 
   virtual ~Thing();
 
-  void set_position(Vec2I other) {
+  void set_position(const Vec2I& other) {
     _position = other;
   }
 
-  void set_position(Vec2I::type x, Vec2I::type y) {
-    _position.x = x;
-    _position.y = y;
+  void set_position(Vec2I::value_type x, Vec2I::value_type y) {
+    _position.x() = x;
+    _position.y() = y;
   }
 
   [[nodiscard]] const Vec2I& position() const { return _position; }

@@ -87,7 +87,7 @@ namespace detail {
 }// namespace detail
 
 /**
- * Run-time information about a type
+ * Run-time information about a contained_type
  */
 struct TypeInfo {
   constexpr TypeInfo() = default;

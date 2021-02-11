@@ -11,6 +11,8 @@ enum class EngineErrorCode {
   too_many_input_systems,
   duplicate_resource,
   dependent_resource_not_found,
+  invalid_pack,
+  invalid_pack_configuration,
 };
 
 std::error_code make_error_code(EngineErrorCode);

@@ -9,6 +9,12 @@ struct Rect final {
 
   T x, y, width, height;
 
+  Rect() : x(0), y(0), width(0), height(0) {}
+
+  Rect(T x, T y, T w, T h) : x(x), y(y), width(w), height(h) {}
+
+  Rect(const Vec2<T> &from, const Vec2<T> &size) : x(from.x()), y(from.y()), width(size.x()), height(size.y()) {}
+
   static Rect rect_from_points(const Vec2<T> &from, const Vec2<T> &to) {
     Rect<T> r;
     if (to.x > from.x) {
@@ -34,11 +40,15 @@ struct Rect final {
     return point > from() && point < to();
   }
 
+  Rect operator+(const Vec2<T> &rhs) const {
+    return Rect<T>(x + rhs.x(), y + rhs.y(), width, height);
+  }
+
   Vec2<T> size() const { return { width, height }; }
 
   [[nodiscard]] Vec2<T> from() const noexcept { return { x, y }; }
 
-  [[nodiscard]] Vec2<T> to() const noexcept { return { x + width, y + height }; }
+  [[nodiscard]] Vec2<T> to() const noexcept { return Vec2<T>(x + width, y + height); }
 };
 
-}
+}// namespace e00

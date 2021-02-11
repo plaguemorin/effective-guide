@@ -10,7 +10,7 @@ struct ConfigurationErrorCategory : std::error_category {
       case e00::ConfigurationError::too_many_parameters: return "too many parameters";
       case e00::ConfigurationError::not_enough_parameters: return "not enough parameters";
       case e00::ConfigurationError::duplicate_resource: return "duplicate resource id";
-      case e00::ConfigurationError::unknown_resource_type: return "unknown resource type";
+      case e00::ConfigurationError::unknown_resource_type: return "unknown resource contained_type";
     }
 
     return {};

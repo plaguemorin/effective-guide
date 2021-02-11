@@ -51,7 +51,7 @@ static T *verify_type(const BoxedValue &ob, const TypeInfo &ti, T *ptr) {
   }
 }
 
-/// Generic Cast_Helper_Inner, for casting to any type
+/// Generic Cast_Helper_Inner, for casting to any contained_type
 template<typename Result>
 struct Cast_Helper_Inner {
   static Result cast(const BoxedValue &ob) {
@@ -64,7 +64,7 @@ struct Cast_Helper_Inner<const Result> : Cast_Helper_Inner<Result> {
 };
 
 
-/// Cast_Helper_Inner for casting to a const * type
+/// Cast_Helper_Inner for casting to a const * contained_type
 template<typename Result>
 struct Cast_Helper_Inner<const Result *> {
   static const Result *cast(const BoxedValue &ob) {
@@ -72,7 +72,7 @@ struct Cast_Helper_Inner<const Result *> {
   }
 };
 
-/// Cast_Helper_Inner for casting to a * type
+/// Cast_Helper_Inner for casting to a * contained_type
 template<typename Result>
 struct Cast_Helper_Inner<Result *> {
   static Result *cast(const BoxedValue &ob) {
@@ -89,11 +89,11 @@ struct Cast_Helper_Inner<const Result *const &> : public Cast_Helper_Inner<const
 };
 
 
-/// Cast_Helper_Inner for casting to a & type
+/// Cast_Helper_Inner for casting to a & contained_type
 template<typename Result>
 struct Cast_Helper_Inner<const Result &> {
   static const Result &cast(const BoxedValue &ob) {
-    // Is it the right base type ?
+    // Is it the right base contained_type ?
     if (ob.get_type_info().bare_equal_type_info(user_type<Result>())) {
 
     }
@@ -103,7 +103,7 @@ struct Cast_Helper_Inner<const Result &> {
 };
 
 
-/// Cast_Helper_Inner for casting to a & type
+/// Cast_Helper_Inner for casting to a & contained_type
 template<typename Result>
 struct Cast_Helper_Inner<Result &> {
   static Result &cast(const BoxedValue &ob) {
@@ -112,7 +112,7 @@ struct Cast_Helper_Inner<Result &> {
 };
 
 
-/// Cast_Helper_Inner for casting to a const std::shared_ptr<const> & type
+/// Cast_Helper_Inner for casting to a const std::shared_ptr<const> & contained_type
 template<typename Result>
 struct Cast_Helper_Inner<const std::shared_ptr<const Result>> : Cast_Helper_Inner<std::shared_ptr<const Result>> {
 };
@@ -122,7 +122,7 @@ struct Cast_Helper_Inner<const std::shared_ptr<const Result> &> : Cast_Helper_In
 };
 
 
-/// Cast_Helper_Inner for casting to a BoxedValue type
+/// Cast_Helper_Inner for casting to a BoxedValue contained_type
 template<>
 struct Cast_Helper_Inner<BoxedValue> {
   static BoxedValue cast(const BoxedValue &ob) {
@@ -130,7 +130,7 @@ struct Cast_Helper_Inner<BoxedValue> {
   }
 };
 
-/// Cast_Helper_Inner for casting to a BoxedValue & type
+/// Cast_Helper_Inner for casting to a BoxedValue & contained_type
 template<>
 struct Cast_Helper_Inner<BoxedValue &> {
   static std::reference_wrapper<BoxedValue> cast(const BoxedValue &ob) {
@@ -139,7 +139,7 @@ struct Cast_Helper_Inner<BoxedValue &> {
 };
 
 
-/// Cast_Helper_Inner for casting to a const BoxedValue & type
+/// Cast_Helper_Inner for casting to a const BoxedValue & contained_type
 template<>
 struct Cast_Helper_Inner<const BoxedValue> : Cast_Helper_Inner<BoxedValue> {
 };
@@ -149,7 +149,7 @@ struct Cast_Helper_Inner<const BoxedValue &> : Cast_Helper_Inner<BoxedValue> {
 };
 
 
-/// Cast_Helper_Inner for casting to a std::reference_wrapper type
+/// Cast_Helper_Inner for casting to a std::reference_wrapper contained_type
 template<typename Result>
 struct Cast_Helper_Inner<std::reference_wrapper<Result>> : Cast_Helper_Inner<Result &> {
 };

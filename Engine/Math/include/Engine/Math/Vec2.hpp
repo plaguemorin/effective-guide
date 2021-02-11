@@ -1,39 +1,59 @@
 #pragma once
 
-#include <type_traits>
+#include "Vec.hpp"
 
 namespace e00 {
+
 template<typename T>
-struct Vec2 final {
-  typedef T type;
+struct Vec2 : Vec<T, 2> {
+  Vec2() : Vec<T, 2>() {}
 
-  type x, y;
+  template<typename Q>
+  Vec2(const Q &x, const Q &y) : Vec<T, 2>{ static_cast<T>(x), static_cast<T>(y) } {}
 
-  Vec2(T _x, T _y) noexcept : x(_x), y(_y) {}
+  Vec2(const Vec2<T> &rhs) : Vec<T, 2>(std::forward<decltype(rhs)>(rhs)) {}
 
-  Vec2() noexcept : x(0), y(0) {}
+  Vec2(Vec2<T> &&other) noexcept : Vec<T, 2>(std::forward<decltype(other)>(other)) {}
 
-  Vec2(const Vec2<T> &other) = default;
+  explicit Vec2(const Vec<T, 2>& s) noexcept : Vec<T, 2>{ static_cast<T>(s.at(0)), static_cast<T>(s.at(1)) } {}
 
-  Vec2<T> flip() const { return { y, x }; }
+  Vec2(const std::initializer_list<T> &lst) : Vec<T, 2>{ lst } {}
 
-  bool operator>(const Vec2<T> &rhs) const { return x > rhs.x && y > rhs.y; }
+  // Assignment
+  Vec2<T> &operator=(const Vec2<T> &rhs) {
+    copy(rhs);
+    return *this;
+  }
 
-  bool operator>=(const Vec2<T> &rhs) const { return x >= rhs.x && y >= rhs.y; }
+  Vec2<T> &operator=(Vec2<T> &&rhs) noexcept {
+    swap(rhs);
+    return *this;
+  }
 
-  bool operator<(const Vec2<T> &rhs) const { return x < rhs.x && y < rhs.y; }
+  auto total() const noexcept { return at(0) * at(1); }
 
-  bool operator<=(const Vec2<T> &rhs) const { return x <= rhs.x && y <= rhs.y; }
+  const auto &x() const { return at(0); }
+  auto &x() { return at(0); }
 
-  Vec2<T> operator/(const Vec2<T> &rhs) const { return { x / rhs.x, y / rhs.y }; }
+  const auto &y() const { return at(1); }
+  auto &y() { return at(1); }
 
-  Vec2<T> operator+(const Vec2<T> &rhs) const { return { x + rhs.x, y + rhs.y }; }
-
-  template<typename Number>
-  typename std::enable_if<std::is_arithmetic<Number>::value, Vec2<Number>>::type operator/(Number n) const { return { x / n, y / n }; }
-
-  Vec2<T> operator%(const Vec2<T> &rhs) const { return { x % rhs.x, y % rhs.y }; }
-
-  auto total() const { return x * y; }
+  Vec2<T> flip() const noexcept { return Vec2<T>{ y(), x() }; }
 };
+
+template<typename T>
+Vec2<T> operator/(const Vec2<T> &a, const Vec2<T> &b) {
+  return Vec2<T>(a.x() / b.x(), a.y() / b.y());
 }
+
+template<typename T>
+Vec2<T> operator+(const Vec2<T> &a, const Vec2<T> &b) {
+  return Vec2<T>(a.x() + b.x(), a.y() + b.y());
+}
+
+template<typename T>
+Vec2<T> operator-(const Vec2<T> &a, const Vec2<T> &b) {
+  return Vec2<T>(a.x() - b.x(), a.y() - b.y());
+}
+
+}// namespace e00

@@ -3,12 +3,12 @@
 #include <memory>
 
 #include <Engine/Math.hpp>
-#include <Engine/ResourceSystem/Resources/Bitmap.hpp>
+#include <Engine/Resources/Bitmap.hpp>
 
 namespace e00::sys {
 class OutputScreen : public resource::Bitmap {
 protected:
-  OutputScreen(const Vec2I &size, BackingType type) : Bitmap(size, type) {}
+  OutputScreen(const Vec2<uint16_t> &size, BackingType type) : Bitmap({}, size, type) {}
 
 public:
   ~OutputScreen() override = default;

@@ -11,14 +11,14 @@ class NamedObject {
 protected:
   NamedObject() : _name{ "UNNAMED" } {}
 
-  explicit NamedObject(std::string_view name) : _name(name) {}
+  explicit NamedObject(std::string name) : _name(std::move(name)) {}
 
   NamedObject(NamedObject &&swap) noexcept : _name(std::move(swap._name)) {}
 
   ~NamedObject() = default;
 
 public:
-  [[nodiscard]] std::string_view name() const { return _name; }
+  [[nodiscard]] const std::string& name() const { return _name; }
 
   NamedObject(const NamedObject &other) = delete;
 

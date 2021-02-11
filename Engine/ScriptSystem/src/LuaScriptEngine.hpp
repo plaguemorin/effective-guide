@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Engine/ScriptSystem/ScriptEngine.hpp>
+#include <Logger/Logger.hpp>
+
 #include <system_error>
 
 extern "C" {
@@ -15,9 +17,10 @@ const std::string lua_engine_name = "Lua";
 
 namespace e00::impl::scripting::lua {
 class LuaScriptEngine : public ScriptEngine {
-  std::map<type_id_no_rtti, std::map<std::string, std::unique_ptr<scripting::ProxyFunction>>> _methods;
   lua_State *_state;
+  Logger _logger;
 
+  std::map<type_id_no_rtti, std::map<std::string, std::unique_ptr<scripting::ProxyFunction>>> _methods;
   std::unique_ptr<scripting::ProxyFunction> _bad_method;
 
 public:
@@ -34,10 +37,12 @@ protected:
   void add_type(const TypeInfo &type) override;
 
 public:
+  void log_from_lua(int level, const std::string_view &str);
+
   std::error_code parse(const std::string &code) override;
 
   std::unique_ptr<scripting::ProxyFunction> get_function(const std::string &fn_name, scripting::TypeInfo preferred_return_type) override;
   std::error_code parse(const std::unique_ptr<e00::Stream> &stream) override;
-  const std::unique_ptr<scripting::ProxyFunction>& get_method_for_type(const TypeInfo& type, const std::string& method_name) const;
+  const std::unique_ptr<scripting::ProxyFunction> &get_method_for_type(const TypeInfo &type, const std::string &method_name) const;
 };
 }// namespace e00::impl::scripting::lua

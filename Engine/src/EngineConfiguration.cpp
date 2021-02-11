@@ -1,5 +1,6 @@
 #include "EngineConfiguration.hpp"
 
+#include <iterator>
 #include <Engine/string_view_utils.hpp>
 
 #include "configuration_error.hpp"

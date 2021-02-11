@@ -5,7 +5,7 @@
 #include "Lua.hpp"
 
 /**
- * Convert to a specific type
+ * Convert to a specific contained_type
  *
  * @param L
  * @param n
@@ -15,7 +15,7 @@
 e00::impl::scripting::BoxedValue lua_to_boxed_value(lua_State *L, int n, const e00::impl::scripting::TypeInfo &info);
 
 /**
- * Convert to closest matching type
+ * Convert to closest matching contained_type
  *
  * @param L
  * @param n

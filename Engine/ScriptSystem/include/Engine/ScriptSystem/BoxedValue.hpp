@@ -7,7 +7,7 @@
 
 namespace e00::impl::scripting {
 /**
- * Wrapper for holding any support C++ type
+ * Wrapper for holding any support C++ contained_type
  * The script engine only understands BoxedValues for values
  */
 struct BoxedValue {
@@ -111,7 +111,7 @@ public:
       _data(DataBuilder::get(std::forward<T>(t))) {
   }
 
-  // Report as another type (for pointers)
+  // Report as another contained_type (for pointers)
   template<typename T, typename = std::enable_if_t<!std::is_same_v<BoxedValue, std::decay_t<T>>>>
   explicit BoxedValue(T &&t, TypeInfo type, bool t_return_value = false)
     : _info(type),
@@ -119,7 +119,7 @@ public:
       _data(DataBuilder::get(std::forward<T>(t))) {
   }
 
-  // Unknown-type constructor
+  // Unknown-contained_type constructor
   BoxedValue() : _info(TypeInfo()), _is_return(false), _data() {}
 
   BoxedValue(BoxedValue &&other) = default;

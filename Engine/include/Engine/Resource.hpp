@@ -26,11 +26,11 @@ protected:
   // Use type_id<T>() to generate
   explicit Resource(type_t type);
 
-  Resource(type_t type, std::string_view name);
+  Resource(type_t type, std::string name);
 
   Resource(id_t resource_id, type_t type);
 
-  Resource(id_t resource_id, type_t type, std::string_view name);
+  Resource(id_t resource_id, type_t type, std::string name);
 
 public:
   Resource() = delete;

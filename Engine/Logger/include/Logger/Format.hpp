@@ -3,6 +3,7 @@
 #include <array>
 #include <algorithm>
 #include <limits>
+#include <iterator>
 #include <type_traits>
 #include <string_view>
 #include <string>
@@ -233,7 +234,7 @@ namespace internal {
     explicit format_arg(int iv) : int_value(iv), type(arg_type::int_type) {}
     explicit format_arg(unsigned long ul) : ulong(ul), type(arg_type::ulong_type) {}
 
-    // Visits an arg by type
+    // Visits an arg by contained_type
     template<typename Visitor>
     constexpr void visit_arg(Visitor &&vis) const {
       switch (type) {
