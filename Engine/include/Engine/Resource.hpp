@@ -7,6 +7,11 @@
 #include <Engine/TypedObject.hpp>
 
 namespace e00::resource {
+class Tileset;
+class Bitmap;
+class Map;
+class Sprite;
+
 using id_t = uint32_t;
 
 constexpr id_t to_id(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {

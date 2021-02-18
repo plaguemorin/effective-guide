@@ -50,11 +50,11 @@ add_library(Engine01
         include/Engine/System/RootStreamFactory.hpp
         include/Engine/Menu.hpp
         src/MapRender.cpp
-        src/MapRender.hpp)
+        src/MapRender.hpp src/ResourceLoader.cpp src/ResourceLoader.hpp src/GIFLDR.cpp src/GIFLDR.hpp)
 
 target_include_directories(Engine01 PUBLIC include)
 target_include_directories(Engine01 PRIVATE src)
-target_link_libraries(Engine01 PUBLIC project_options project_warnings Engine01_Stream Engine01_Logger Engine01_Math Engine01_BaseObject Engine01_Configuration Engine01_Utils Engine01_ScriptSystem lodepng)
+target_link_libraries(Engine01 PUBLIC project_options project_warnings Engine01_Stream Engine01_Logger Engine01_Math Engine01_BaseObject Engine01_Configuration Engine01_Utils Engine01_ScriptSystem)
 
 option(ENABLE_TESTING "Enable Test Builds" ON)
 if (ENABLE_TESTING)

@@ -35,9 +35,9 @@ public:
 
   Stream(const Stream &other) = delete;
 
-  Stream& operator=(Stream&&) = delete;
+  Stream &operator=(Stream &&) = delete;
 
-  Stream& operator=(const Stream&) = delete;
+  Stream &operator=(const Stream &) = delete;
 
   virtual ~Stream() = default;
 
@@ -49,6 +49,12 @@ public:
 
   [[nodiscard]] size_t max_read() const { return _stream_size - _current_position; }
 
+  /**
+   * Seeks to an absolute position
+   *
+   * @param new_position the absolute position to seek to
+   * @return error code of any error that occurred, if any
+   */
   std::error_code seek(size_t new_position) {
     if (new_position <= _stream_size) {
       if (const auto ec = real_seek(new_position)) {
@@ -76,7 +82,8 @@ public:
     return {};
   }
 
-  virtual std::error_code read(std::vector<uint8_t> &data) { return read(data.size(), data.data()); }
+  template<typename T>
+  std::error_code read(std::vector<T> &data) { return read(data.size() * sizeof(T), data.data()); }
 
   /**
    * Reads until \n
@@ -121,7 +128,7 @@ public:
    * @param max_length max length of the buffer
    * @return the buffer, or nullptr if an error occured
    */
-  char* read_line_into(char *str, int max_length) {
+  char *read_line_into(char *str, int max_length) {
     if (max_length <= 0)
       return nullptr;
 

@@ -12,6 +12,7 @@
 #include <Engine/System/OutputScreen.hpp>
 #include <Engine/System/InputSystem.hpp>
 #include <Engine/System/RootStreamFactory.hpp>
+
 #include <Engine/Stream/StreamFactory.hpp>
 
 #include <Engine/Resource.hpp>
@@ -36,6 +37,7 @@ class Engine {
   const resource::ResourcePtr<resource::Resource> _bad_resource;
 
   struct Pack {
+    uint32_t id;
     std::unique_ptr<sys::StreamFactory> stream_factory;
   };
 
@@ -50,6 +52,7 @@ class Engine {
   bool _running;
 
   std::list<Pack> _packs;
+
   // Loaded resources
   std::list<resource::ResourcePtr<resource::Resource>> _resources;
 
@@ -65,7 +68,16 @@ class Engine {
   std::unordered_map<std::string, std::string> _setup;
 
   // Find a resource
-  [[nodiscard]] const resource::ResourcePtr<resource::Resource>& find_resource(const std::string_view &name) const;
+  [[nodiscard]] const resource::ResourcePtr<resource::Resource>& find_resource(const std::string_view &name) const {
+    for (auto &resource : _resources) {
+      if (resource.name() == name) {
+        return resource;
+      }
+    }
+
+    _logger.error(SourceLocation(), "Resource named {} was not found", name);
+    return _bad_resource;
+  }
 
   template<typename T>
   resource::ResourcePtr<T> find_resource_t(const std::string_view &name) const {
@@ -82,7 +94,7 @@ class Engine {
   }
 
   // Perform a lazy load
-  resource::Resource* load_resource(resource::detail::ControlBlockObject& source);
+  std::unique_ptr<resource::Resource> lazy_load_resource(resource::detail::ControlBlockObject& source);
 
 public:
   static void add_logger_sink(sys::LoggerSink *logger_sink);

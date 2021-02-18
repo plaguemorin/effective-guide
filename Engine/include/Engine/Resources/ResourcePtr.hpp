@@ -20,13 +20,15 @@ namespace detail {
     void *_ptr;
     std::string _name;
     Engine *_loader;
+    uint32_t _pack_id;
 
   public:
-    ControlBlock(void *ptr, std::string name, Engine *eng) noexcept
+    ControlBlock(void *ptr, std::string name, Engine *eng, uint32_t pack_id) noexcept
       : _count(0),
         _ptr(ptr),
         _name(std::move(name)),
-        _loader(eng) {}
+        _loader(eng),
+        _pack_id(pack_id) {}
 
     void increment() noexcept { _count++; }
     void decrement() noexcept { _count--; }
@@ -36,6 +38,7 @@ namespace detail {
     [[nodiscard]] decltype(_count) count() const noexcept { return _count; }
     [[nodiscard]] decltype(_loader) loader() const noexcept { return _loader; }
     [[nodiscard]] const decltype(_name) &name() const noexcept { return _name; }
+    [[nodiscard]] decltype(_pack_id) pack_id() const noexcept { return _pack_id; }
     [[nodiscard]] void *get() const noexcept { return _ptr; }
   };
 
@@ -43,13 +46,13 @@ namespace detail {
     detail::ControlBlock *_control_block;
     type_t _type;
 
-    void _perform_lazy_load();
+    void _perform_lazy_load() noexcept;
 
   protected:
     constexpr ControlBlockObject(type_t type) noexcept : _control_block(nullptr), _type(type) {}
 
-    explicit ControlBlockObject(void *p, std::string name, Engine *eng, type_t type) noexcept
-      : _control_block(new detail::ControlBlock(p, std::move(name), eng)),
+    explicit ControlBlockObject(void *p, std::string name, Engine *eng, type_t type, uint32_t pack_id) noexcept
+      : _control_block(new detail::ControlBlock(p, std::move(name), eng, pack_id)),
         _type(type) {
       increment();
     }
@@ -99,16 +102,17 @@ namespace detail {
   public:
     // Usage counter
     [[nodiscard]] uint16_t use_count() const noexcept { return _control_block ? _control_block->count() : 0; }
-    [[nodiscard]] const auto *loader() const { return _control_block ? _control_block->loader() : nullptr; }
+    [[nodiscard]] const auto *loader() const noexcept { return _control_block ? _control_block->loader() : nullptr; }
     [[nodiscard]] std::string name() const { return _control_block ? _control_block->name() : "(No CB)"; }
-    [[nodiscard]] type_t contained_type() const { return _type; }
-    [[nodiscard]] bool is_loaded() const { return _control_block != nullptr && _control_block->get() != nullptr; }
+    [[nodiscard]] type_t contained_type() const noexcept { return _type; }
+    [[nodiscard]] bool is_loaded() const noexcept { return _control_block != nullptr && _control_block->get() != nullptr; }
+    [[nodiscard]] uint32_t pack_id() const noexcept { return _control_block != nullptr ? _control_block->pack_id() : 0; }
 
     // Return true if this is a valid reference
     explicit operator bool() const noexcept { return _control_block != nullptr; }
 
     //
-    void ensure_loaded() const {
+    void ensure_loaded() const noexcept {
       if (_control_block != nullptr && _control_block->get() == nullptr) {
         // OMG THIS IS UGLY
         (const_cast<ControlBlockObject *>(this))->_perform_lazy_load();
@@ -147,10 +151,11 @@ public:
    *
    * @param name name of future resource
    * @param type contained_type of future resource
+   * @param pack_id the ID of the pack containing the resource
    * @param eng loader engine
    */
-  ResourcePtr(std::string name, type_t type, Engine *eng) noexcept
-    : detail::ControlBlockObject(nullptr, std::move(name), eng, type) {
+  ResourcePtr(std::string name, type_t type, uint32_t pack_id, Engine *eng) noexcept
+    : detail::ControlBlockObject(nullptr, std::move(name), eng, type, pack_id) {
   }
 
   /**
@@ -183,10 +188,11 @@ public:
    * @tparam Yp the resource contained_type
    * @param other the resource pointer to take over
    * @param eng the loader engine
+   * @param pack_id the pack ID that loaded this resource (if any)
    */
   template<typename Yp>
-  ResourcePtr(std::unique_ptr<Yp> &&other, Engine *eng)
-    : detail::ControlBlockObject(nullptr, other->name(), eng, other->type()) {
+  ResourcePtr(std::unique_ptr<Yp> &&other, Engine *eng, uint32_t pack_id = 0)
+    : detail::ControlBlockObject(nullptr, other->name(), eng, other->type(), pack_id) {
     setPtr(other.release());
   }
 
@@ -265,8 +271,8 @@ ResourcePtr<ResourceT> make_resource_ptr(Types &&...Args) {
 }
 
 template<class ResourceT, typename EngineT>
-ResourcePtr<ResourceT> make_lazy_ptr(std::string name, type_t type, EngineT loader) {
-  return ResourcePtr<ResourceT>(std::move(name), type, loader);
+ResourcePtr<ResourceT> make_lazy_ptr(std::string name, type_t type, uint32_t pack_id, EngineT loader) {
+  return ResourcePtr<ResourceT>(std::move(name), type, pack_id, loader);
 }
 
 ///////////////////////////////////////////////////////

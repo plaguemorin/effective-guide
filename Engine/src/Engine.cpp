@@ -3,10 +3,13 @@
 #include <Engine/Configuration/Parser.hpp>
 #include <Engine/ScriptSystem/ScriptEngine.hpp>
 #include <Engine/Resources/Map.hpp>
+#include <Engine/string_view_utils.hpp>
 
 #include "Error.hpp"
 #include "EngineConfiguration.hpp"
 #include "MapRender.hpp"
+
+#include "ResourceLoader.hpp"
 
 namespace e00 {
 // 35Hz is a 28ms period
@@ -117,36 +120,25 @@ std::error_code Engine::add_resource_pack(std::unique_ptr<sys::StreamFactory> &&
     // Parse it to know what we need to index and make available
     class PackConfigParser : public cfg::ParserListener {
       Engine::Pack &pack;
-      bool has_basic_info_name;
 
     public:
       struct ResourceInfo {
         type_t type;
       };
 
-      std::string name;
       std::string script;
       std::map<std::string, ResourceInfo> resources;
 
       explicit PackConfigParser(Pack &pack)
-        : pack(pack),
-          has_basic_info_name(false) {}
+        : pack(pack) {}
 
       std::error_code handle_entry(const cfg::Entry &configuration_entry) override {
         // Empty section is the root
         if (configuration_entry.section.empty()) {
           if (configuration_entry.name == "Script") {
             script = configuration_entry.value;
-          } else if (configuration_entry.name == "Name") {
-            name = configuration_entry.value;
-            has_basic_info_name = true;
           }
         } else {
-          // Don't bother to parse if we don't have the minimum basic requirements
-          if (!has_basic_info_name) {
-            return make_error_code(EngineErrorCode::invalid_pack_configuration);
-          }
-
           // The section is the resource name
           auto &info = resources[std::string(configuration_entry.section)];
           if (configuration_entry.name == "Type") {
@@ -163,6 +155,7 @@ std::error_code Engine::add_resource_pack(std::unique_ptr<sys::StreamFactory> &&
     // Create the pack index
     auto &pack_index = _packs.emplace_back();
     pack_index.stream_factory = std::move(pack);
+    pack_index.id = _packs.size() + 1;
 
     // Parse the config
     PackConfigParser listener(pack_index);
@@ -171,23 +164,17 @@ std::error_code Engine::add_resource_pack(std::unique_ptr<sys::StreamFactory> &&
       return parse_error;
     }
 
-    // Ensure the pack has basic info
-    if (listener.name.empty()) {
-      _logger.error(SourceLocation(), "Pack as no \"Name\" field");
-      return make_error_code(EngineErrorCode::invalid_pack_configuration);
-    }
-
     // Load the script to in the script engine if we have one
     if (!listener.script.empty()) {
-      _logger.info(SourceLocation(), "Pack {} has a script to parse: {}", listener.name, listener.script);
+      _logger.info(SourceLocation(), "Pack {} has a script to parse: {}", pack_index.id, listener.script);
 
       if (auto script_stream = pack_index.stream_factory->open_stream(listener.script)) {
         if (auto script_error = _script_engine->parse(script_stream)) {
-          _logger.error(SourceLocation(), "Failed to load script {} from pack {}: {}", listener.script, listener.name, script_error.message());
+          _logger.error(SourceLocation(), "Failed to load script {} from pack {}: {}", listener.script, pack_index.id, script_error.message());
           return script_error;
         }
       } else {
-        _logger.error(SourceLocation(), "Failed to load script {} from pack {}. Check {}", listener.script, listener.name, PACK_CONFIGURATION_FILE_NAME);
+        _logger.error(SourceLocation(), "Failed to load script {} from pack {}. Check {}", listener.script, pack_index.id, PACK_CONFIGURATION_FILE_NAME);
         return make_error_code(EngineErrorCode::invalid_pack_configuration);
       }
     }
@@ -195,7 +182,11 @@ std::error_code Engine::add_resource_pack(std::unique_ptr<sys::StreamFactory> &&
     // Warm up the cache
     for (const auto &resource : listener.resources) {
       _logger.info(SourceLocation(), "Known resource: {} is a {}", resource.first, resource.second.type);
-      _resources.emplace_back(resource::make_lazy_ptr<resource::Resource>(resource.first, resource.second.type, this));
+      _resources.emplace_back(resource::make_lazy_ptr<resource::Resource>(
+        resource.first,
+        resource.second.type,
+        pack_index.id,
+        this));
     }
   } else {
     // This is a required file so we cannot continue without it
@@ -314,6 +305,7 @@ void Engine::add_logger_sink(sys::LoggerSink *logger_sink) {
 void Engine::play_map(const std::string &map_name) {
   _logger.info(SourceLocation(), "Asked for map named {}", map_name);
 
+  // Testing
   if (auto map = find_resource_t<resource::Map>(map_name)) {
     if (auto tileset = find_resource_t<resource::Tileset>(map->tileset_name())) {
       MapRender render(tileset, map);
@@ -331,28 +323,35 @@ void Engine::add_resource(std::unique_ptr<resource::Resource> &&resource) {
   _resources.emplace_back(std::move(resource), this);
 }
 
-const resource::ResourcePtr<resource::Resource> &Engine::find_resource(const std::string_view &name) const {
-  for (auto &resource : _resources) {
-    if (resource.name() == name) {
-      return resource;
-    }
+std::unique_ptr<resource::Resource> Engine::lazy_load_resource(resource::detail::ControlBlockObject &source) {
+  _logger.info(SourceLocation(), "Lazy loading resource {}", source.name());
+
+  // Find the resource in the pack
+  if (source.pack_id() == 0) {
+    // this is a massive error
+    _logger.error(SourceLocation(), "Lazy resource loading: error {} has no pack id", source.name());
+    std::abort();
   }
 
-  _logger.error(SourceLocation(), "Resource named {} was not found", name);
-  return _bad_resource;
-}
+  // Find that pack!
+  for (const auto &pack : _packs) {
+    // Skip if it's not the right pack_id
+    if (pack.id != source.pack_id())
+      continue;
 
-resource::Resource* Engine::load_resource(resource::detail::ControlBlockObject &source) {
-  _logger.info(SourceLocation(), "Loading resource {} as type {}", source.name(), source.contained_type());
+    impl::ResourceLoader loader(pack.stream_factory);
+    return loader.load(source.name(), source.contained_type());
+  }
 
-  return nullptr;
+  _logger.error(SourceLocation(), "Aborting! Failed to find pack referenced by this lazy load resource");
+  std::abort();
 }
 
 namespace resource::detail {
-  void ControlBlockObject::_perform_lazy_load() {
-    resource::Resource* ptr = _control_block->loader()->load_resource(*this);
+  void ControlBlockObject::_perform_lazy_load() noexcept {
+    std::unique_ptr<resource::Resource> ptr = _control_block->loader()->lazy_load_resource(*this);
     if (ptr != nullptr) {
-      setPtr(ptr);
+      setPtr(ptr.release());
     }
   }
 }// namespace resource::detail
