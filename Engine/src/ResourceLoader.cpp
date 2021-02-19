@@ -82,7 +82,11 @@ std::unique_ptr<resource::Bitmap> ResourceLoader::load_bitmap(const std::string 
   // TODO: Is it a GIF or PNG ?
 
   if (auto stream = _stream_factory->open_stream(res_name)) {
-    return load_gif_from_stream(std::move(stream));
+    auto vector = load_gif_from_stream(std::move(stream));
+    if (vector.empty()) {
+      return nullptr;
+    }
+    return std::move(vector.front());
   }
 
   return nullptr;

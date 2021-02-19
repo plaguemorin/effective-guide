@@ -76,81 +76,75 @@ the file is divided into segments, each introduced by a 1-byte sentinel:
   An extension block (introduced by 0x21, an ASCII exclamation point '!')
   The trailer (a single byte of value 0x3B, an ASCII semicolon ';'), which should be the last byte of the file.
 */
-struct GifSegment {
+enum class SegmentType {
+  invalid,
+  image,
+  extension,
+  trailer,
+};
+
+struct ExtensionHeader {
   enum class Type {
-    invalid,
-    image,
-    extension_unknown,
-    extension_plain_text,
-    extension_graphic_control,
-    extension_comment,
-    extension_application,
-    trailer,
+    unknown,
+    plain_text,
+    graphic_control,
+    comment,
+    application,
   };
 
   Type type;
-  uint8_t size;
+  uint8_t length;
 };
 
-GifSegment::Type read_gif_segment_type(const std::unique_ptr<e00::Stream> &stream) {
+struct FrameDataHeader {
+  uint16_t left_position;
+  uint16_t top_position;
+  uint16_t width;
+  uint16_t height;
+
+  bool has_local_color_table;
+  bool is_interlaced;
+  bool is_local_color_table_sorted;
+
+  std::vector<GifColor> local_color_table;
+};
+
+SegmentType read_gif_segment_type(const std::unique_ptr<e00::Stream> &stream) {
   char seg;
 
   // Read the segment type
   if (!stream->read(seg)) {
     // Nope outta here if we can't
-    return GifSegment::Type::invalid;
+    return SegmentType::invalid;
   }
 
-  // Do the simple first
-  if (seg == ',') return GifSegment::Type::image;
-  if (seg == ';') return GifSegment::Type::trailer;
+  if (seg == ',') return SegmentType::image;
+  if (seg == ';') return SegmentType::trailer;
+  if (seg == '!') return SegmentType::extension;
 
-  // If it's an extension, read more to figure out the real type
-  if (seg == '!') {
-    // Read the real extension type
-    uint8_t label;
-    if (!stream->read(label)) {
-      return GifSegment::Type::invalid;
-    }
-
-    switch (label) {
-      case 0x01: return GifSegment::Type::extension_plain_text;
-      case 0xF9: return GifSegment::Type::extension_graphic_control;
-      case 0xFE: return GifSegment::Type::extension_comment;
-      case 0xFF: return GifSegment::Type::extension_application;
-    }
-
-    return GifSegment::Type::extension_unknown;
-  }
-
-  return GifSegment::Type::invalid;
+  return SegmentType::invalid;
 }
 
-GifSegment read_next_segment_header(const std::unique_ptr<e00::Stream> &stream) {
-  // Make sure we have something to read
-  if (stream->max_read() <= 0)
-    return GifSegment{ GifSegment::Type::invalid, 0 };
-
-  // Read the type
-  GifSegment::Type segment_type = read_gif_segment_type(stream);
-  if (segment_type == GifSegment::Type::invalid) {
-    // If it's not a segment, abort right away
-    return GifSegment{ GifSegment::Type::invalid, 0 };
+ExtensionHeader read_gif_extension_header(const std::unique_ptr<e00::Stream> &stream) {
+  ExtensionHeader read_header;
+  uint8_t label;
+  if (!stream->read(label)) {
+    return { ExtensionHeader::Type::unknown, 0 };
   }
 
-  // If it's the trailer, there's no length, return immediately
-  if (segment_type == GifSegment::Type::trailer) {
-    return GifSegment{ GifSegment::Type::trailer, 0 };
+  read_header.type = ExtensionHeader::Type::unknown;
+  switch (label) {
+    case 0x01: read_header.type = ExtensionHeader::Type::plain_text; break;
+    case 0xF9: read_header.type = ExtensionHeader::Type::graphic_control; break;
+    case 0xFE: read_header.type = ExtensionHeader::Type::comment; break;
+    case 0xFF: read_header.type = ExtensionHeader::Type::application; break;
   }
 
-  // Since we have a valid type, the next byte is always the length
-  uint8_t len;
-  if (!stream->read(len)) {
-    return GifSegment{ GifSegment::Type::invalid, 0 };
+  if (!stream->read(read_header.length)) {
+    return { ExtensionHeader::Type::unknown, 0 };
   }
 
-  // Return what we have
-  return GifSegment{ segment_type, len };
+  return read_header;
 }
 
 GifHeader read_gif_header(const std::unique_ptr<e00::Stream> &stream) {
@@ -222,6 +216,31 @@ GifGraphicControlExtensionData read_gce(const std::unique_ptr<e00::Stream> &stre
   return value;
 }
 
+FrameDataHeader read_frame_header(const std::unique_ptr<e00::Stream> &stream) {
+  // GIF docs calls this an image
+  FrameDataHeader header;
+  stream->read(header.left_position);
+  stream->read(header.top_position);
+  stream->read(header.width);
+  stream->read(header.height);
+
+  uint8_t packed;
+  stream->read(packed);
+
+  header.is_local_color_table_sorted = packed & 0x20;
+  header.is_interlaced = packed & 0x40;
+  header.has_local_color_table = packed & 0x80;
+
+  if (header.has_local_color_table) {
+    header.local_color_table.resize(1 << ((packed & 0x07) + 1));
+    for (auto i = 0u; i < header.local_color_table.size(); i++) {
+      header.local_color_table.at(i) = read_gif_color(stream);
+    }
+  }
+
+  return header;
+}
+
 void discard_sub_block(const std::unique_ptr<e00::Stream> &stream) {
   uint8_t size;
   do {
@@ -240,14 +259,14 @@ std::error_code make_error_code(GifLoaderErrorCode e) {
   return std::error_code(static_cast<int>(e), gif_loader_err_category);
 }
 
-std::unique_ptr<resource::Bitmap> load_gif_from_stream(const std::unique_ptr<Stream> &stream) {
+std::vector<std::unique_ptr<resource::Bitmap>> load_gif_from_stream(const std::unique_ptr<Stream> &stream) {
   // Make sure we're at the beginning of the stream
   stream->seek(0);
 
   // Make sure we have the minimum stream size
   if (stream->stream_size() < sizeof(GifHeader)) {
     // It's too small!
-    return nullptr;
+    return {};
   }
 
   // Start by confirming we have the right file type by the header
@@ -258,21 +277,21 @@ std::unique_ptr<resource::Bitmap> load_gif_from_stream(const std::unique_ptr<Str
       || header.signature[1] != 'I'
       || header.signature[2] != 'F') {
     // Not a GIF
-    return nullptr;
+    return {};
   }
 
   // Verify version
   if (header.version[0] != '8' || header.version[2] != 'a'
       || !(header.version[1] == '7' || header.version[1] == '9')) {
     // Not a version we understand
-    return nullptr;
+    return {};
   }
 
   const bool has_color_table = header.packed & 0x80;
   if (!has_color_table) {
     // no global color table: error out ?
     // for now, yes error out
-    return nullptr;
+    return {};
   }
 
   // Color Space Depth
@@ -290,32 +309,50 @@ std::unique_ptr<resource::Bitmap> load_gif_from_stream(const std::unique_ptr<Str
     }
   }
 
+  bool has_gce = false;
+  GifGraphicControlExtensionData last_gce;
+  std::vector<std::unique_ptr<resource::Bitmap>> images;
+
   while (stream->max_read() > 0) {
-    const auto segment = read_next_segment_header(stream);
-    switch (segment.type) {
-      case GifSegment::Type::invalid:
-        return nullptr;
-      case GifSegment::Type::image:
-        break;
-      case GifSegment::Type::extension_plain_text:
-      case GifSegment::Type::extension_graphic_control:
+    const auto segment = read_gif_segment_type(stream);
+    switch (segment) {
+      case SegmentType::invalid:
+        return {};
+      case SegmentType::image:
         {
-          auto gce = read_gce(stream);
+          const auto frame_header = read_frame_header(stream);
+          if (has_gce) {
+          }
         }
-      case GifSegment::Type::extension_comment:
-      case GifSegment::Type::extension_application:
-      case GifSegment::Type::extension_unknown:
-        // Skip !
-        stream->seek(stream->current_position() + segment.size);
-        discard_sub_block(stream);
         break;
-      case GifSegment::Type::trailer:
+      case SegmentType::extension:
+        {
+          const auto ext_header = read_gif_extension_header(stream);
+          const auto position = stream->current_position();
+          switch (ext_header.type) {
+            case ExtensionHeader::Type::unknown: break;
+            case ExtensionHeader::Type::plain_text: break;
+            case ExtensionHeader::Type::graphic_control:
+              last_gce = read_gce(stream);
+              has_gce = true;
+              break;
+            case ExtensionHeader::Type::comment: break;
+            case ExtensionHeader::Type::application: break;
+          }
+
+          // Always skip headers
+          stream->seek(position + ext_header.length);
+          discard_sub_block(stream);
+        }
+        break;
+      case SegmentType::trailer:
         // END OF FILE normally
-        return nullptr;
+        return images;
     }
   }
 
-  return nullptr;
+  return {};
 }
 
 }// namespace e00::impl
+

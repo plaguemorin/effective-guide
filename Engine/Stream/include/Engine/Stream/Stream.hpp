@@ -167,5 +167,14 @@ public:
 
   template<typename T>
   bool read(T &out) { return !read(sizeof(T), &out); }
+
+  template<typename T>
+  T read() {
+    T read_value;
+    if (read(read_value)) {
+      return read_value;
+    }
+    return {};
+  }
 };
 }// namespace e00
