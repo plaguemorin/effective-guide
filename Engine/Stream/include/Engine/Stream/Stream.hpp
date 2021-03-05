@@ -165,6 +165,11 @@ public:
     return str;
   }
 
+  template<typename T, unsigned N>
+  bool read(T (&t)[N]) {
+    return !read(sizeof(T) * N, t);
+  }
+
   template<typename T>
   bool read(T &out) { return !read(sizeof(T), &out); }
 

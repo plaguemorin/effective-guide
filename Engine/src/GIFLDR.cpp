@@ -1,4 +1,6 @@
 #include "GIFLDR.hpp"
+
+#include <array>
 #include <chrono>
 
 namespace {
@@ -83,6 +85,155 @@ enum class SegmentType {
   trailer,
 };
 
+class LZWTable {
+  struct Entry {
+    uint8_t byte;
+    bool has_prefix;
+    uint16_t prefix_entry_index;
+  };
+
+  uint8_t _initial_key_size;
+  uint16_t _num_entries;
+
+  std::array<Entry, 0x1000> _entries;
+
+public:
+  explicit LZWTable(uint8_t key_size)
+    : _initial_key_size(key_size),
+      _num_entries(0) {
+    // Key size is in bits,
+    // to that, we add the CLEAR and the STOP
+    clear();
+  }
+
+  uint16_t num_entries() const { return _num_entries; }
+
+  void clear() {
+    _num_entries = (1 << (_initial_key_size)) + 2;
+
+    for (auto key = 0; key < _num_entries; key++) {
+      _entries[key].has_prefix = false;
+      _entries[key].prefix_entry_index = 0;
+      _entries[key].byte = (uint8_t)(key & 0xFF);
+    }
+  }
+
+  bool is_full() const {
+    return _num_entries >= 0x1000;
+  }
+
+  bool has_index(uint16_t index) const {
+    return _num_entries >= index;
+  }
+
+  /**
+   * Follows the chain starting at `index` until there is no more
+   * previous items and outputs that byte
+   *
+   * @param index where to start searching from
+   * @return the top most byte of the chain
+   */
+  uint8_t find_root_byte(uint16_t index) const {
+    if (!has_index(index)) return 0;
+
+    while (_entries[index].has_prefix) {
+      index = _entries[index].prefix_entry_index;
+    }
+
+    return _entries[index].byte;
+  }
+
+  uint16_t size_of_index(uint16_t index) const {
+    if (!has_index(index)) return 0;
+    // If we know the index, it's at least 1 byte long
+    // Now, we count how many prefixes we can do until we reach an
+    // entry that doesn't have a prefix
+    uint16_t count = 1;
+
+    while (_entries[index].has_prefix) {
+      index = _entries[index].prefix_entry_index;
+      count++;
+    }
+
+    return count;
+  }
+
+  /* Call @size_of_index to know how long this method will write
+   * @returns the data pointer pointing to after the last byte
+   */
+  uint8_t *write_index_to(uint16_t index, uint8_t *data) {
+    const auto length = size_of_index(index);
+    if (length == 0) {
+      return data;
+    }
+
+    // the entries are built up this way "backwards",
+    // so it's necessary to emit them in reverse order.
+    data += length - 1;
+
+    *data = _entries[index].byte;
+    data--;
+
+    while (_entries[index].has_prefix) {
+      index = _entries[index].prefix_entry_index;
+      *data = _entries[index].byte;
+      data--;
+    }
+
+    return data + length;
+  }
+
+  void add(uint16_t previous, uint8_t byte) {
+    _entries[_num_entries].has_prefix = true;
+    _entries[_num_entries].prefix_entry_index = previous;
+    _entries[_num_entries].byte = byte;
+    _num_entries++;
+  }
+};
+
+class GifImageDataReader {
+  const std::unique_ptr<e00::Stream> &_stream;
+
+  uint8_t _chunk_length;
+  uint8_t _shift;
+  uint8_t _last_byte_read;
+
+public:
+  GifImageDataReader(const std::unique_ptr<e00::Stream> &stream)
+    : _stream(stream),
+      _chunk_length(0),
+      _shift(0),
+      _last_byte_read(0) {}
+
+  ~GifImageDataReader() = default;
+
+
+  uint16_t next_key(uint16_t key_size) {
+    uint16_t key = 0;
+    int frag_size = 0;
+
+    for (auto bits_read = 0; bits_read < key_size; bits_read += frag_size) {
+      const auto right_pad = (_shift + bits_read) % 8;
+      if (right_pad == 0) {
+        if (_chunk_length == 0) {
+          _stream->read(_chunk_length);
+        }
+
+        _stream->read(_last_byte_read);
+        _chunk_length--;
+      }
+
+      frag_size = std::min(key_size - bits_read, 8 - right_pad);
+      key |= ((uint16_t)_last_byte_read >> right_pad) << bits_read;
+    }
+
+    _shift = (_shift + key_size) % 8;
+
+    key &= (1 << key_size) - 1;
+    return key;
+  }
+};
+
 struct ExtensionHeader {
   enum class Type {
     unknown,
@@ -108,6 +259,17 @@ struct FrameDataHeader {
 
   std::vector<GifColor> local_color_table;
 };
+
+void discard_sub_block(const std::unique_ptr<e00::Stream> &stream) {
+  uint8_t size;
+  do {
+    if (!stream->read(size)) {
+      return;
+    }
+
+    stream->seek(stream->current_position() + size);
+  } while (size > 0);
+}
 
 SegmentType read_gif_segment_type(const std::unique_ptr<e00::Stream> &stream) {
   char seg;
@@ -241,15 +403,71 @@ FrameDataHeader read_frame_header(const std::unique_ptr<e00::Stream> &stream) {
   return header;
 }
 
-void discard_sub_block(const std::unique_ptr<e00::Stream> &stream) {
-  uint8_t size;
-  do {
-    if (!stream->read(size)) {
-      return;
+std::error_code decode_image(const std::unique_ptr<e00::Stream> &stream, const FrameDataHeader &header, const GifGraphicControlExtensionData &gce, const std::unique_ptr<e00::resource::Bitmap> &image) {
+
+  uint8_t initial_key_size = 0;
+  stream->read(initial_key_size);
+  LZWTable table(initial_key_size);
+
+  // Make sure we mark the end of the image stream-- just to make
+  // sure we don't accumulate errors
+  const auto start_pos = stream->current_position();
+  discard_sub_block(stream);
+  const auto end_pos = stream->current_position();
+  stream->seek(start_pos);
+
+  // Make our CLEAR and STOP codes
+  const auto clear = 1 << initial_key_size;
+  const auto stop = clear + 1;
+
+  // Initialize our reader that helps us read X bits keys
+  GifImageDataReader reader(stream);
+  uint16_t key_size = initial_key_size + 1;
+
+  // What was our previous code?
+  uint16_t previous_key = std::numeric_limits<uint16_t>::max();
+
+  while (1) {
+    const auto code = reader.next_key(key_size);
+    if (code == clear) {
+      table.clear();
+      continue;
+    } else if (code == stop) {
+      break;
     }
 
-    stream->seek(stream->current_position() + size);
-  } while (size > 0);
+    // We didn't get a clear nor a break
+    if (previous_key != std::numeric_limits<uint16_t>::max()
+        && !table.is_full()) {
+
+      if (code == table.num_entries()) {
+        table.add(previous_key, table.find_root_byte(previous_key));
+      } else {
+        table.add(previous_key, table.find_root_byte(code));
+      }
+
+      // GIF89a mandates that this stops at 12 bits
+      if (!table.is_full()
+          && (table.num_entries() & (table.num_entries() - 1)) == 0) key_size++;
+    }
+
+    // Keep our previous code
+    previous_key = code;
+
+    // Write data to the bitmap
+    const auto data_len = table.size_of_index(code);
+    // debug
+    std::vector<uint8_t> debug_data;
+    debug_data.resize(data_len);
+    table.write_index_to(code, debug_data.data());
+
+    debug_data.resize(debug_data.size());
+  }
+
+  // Reset stream position to the end
+  stream->seek(end_pos);
+
+  return {};
 }
 
 }// namespace
@@ -320,8 +538,26 @@ std::vector<std::unique_ptr<resource::Bitmap>> load_gif_from_stream(const std::u
         return {};
       case SegmentType::image:
         {
+          // In GIFs, frames can be smaller than the actual bitmap size
+          // Frame can also have their local color table (the total number
+          // of colors can exceed 256) but we need to make a compromise;
           const auto frame_header = read_frame_header(stream);
+
+          // Create an image the full size
+          auto frame = e00::resource::Bitmap::CreateMemoryBitmap(
+            {},
+            Vec2<uint16_t>(header.screen_width, header.screen_height),
+            true);
+
+          std::error_code ec;
           if (has_gce) {
+            ec = decode_image(stream, frame_header, last_gce, frame);
+          } else {
+            ec = decode_image(stream, frame_header, {}, frame);
+          }
+
+          if (!ec) {
+            images.push_back(frame);
           }
         }
         break;
@@ -355,4 +591,3 @@ std::vector<std::unique_ptr<resource::Bitmap>> load_gif_from_stream(const std::u
 }
 
 }// namespace e00::impl
-

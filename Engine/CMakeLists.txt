@@ -50,7 +50,7 @@ add_library(Engine01
         include/Engine/System/RootStreamFactory.hpp
         include/Engine/Menu.hpp
         src/MapRender.cpp
-        src/MapRender.hpp src/ResourceLoader.cpp src/ResourceLoader.hpp src/GIFLDR.cpp src/GIFLDR.hpp)
+        src/MapRender.hpp src/ResourceLoader.cpp src/ResourceLoader.hpp src/GIFLDR.cpp src/GIFLDR.hpp src/BMPLDR.cpp src/BMPLDR.hpp)
 
 target_include_directories(Engine01 PUBLIC include)
 target_include_directories(Engine01 PRIVATE src)
